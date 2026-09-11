@@ -1,0 +1,81 @@
+# ==============================
+# Terraform
+# ==============================
+
+# Terraform working directory
+.terraform/
+
+# Terraform variable files
+
+
+# Terraform state
+*.tfstate
+*.tfstate.*
+
+# Terraform crash logs
+crash.log
+crash.*.log
+
+# Terraform plan files
+*.tfplan
+*.plan
+
+
+# ==============================
+# Terraform lock / overrides
+# ==============================
+
+# Keep .terraform.lock.hcl committed.
+# Do NOT ignore it.
+
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+
+# ==============================
+# Secrets / Environment
+# ==============================
+
+.env
+.env.*
+!.env.example
+
+
+# ==============================
+# Python
+# ==============================
+
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+.venv/
+venv/
+env/
+ENV/
+
+.pytest_cache/
+.mypy_cache/
+
+
+# ==============================
+# IDE / Editor
+# ==============================
+
+.vscode/
+.idea/
+
+*.swp
+*.swo
+*~
+
+
+# ==============================
+# OS files
+# ==============================
+
+.DS_Store
+Thumbs.db

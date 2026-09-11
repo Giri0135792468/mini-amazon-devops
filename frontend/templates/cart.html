@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Cart - Mini Amazon</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}"
+    >
+</head>
+
+<body>
+
+    <div class="navbar">
+        Mini Amazon
+    </div>
+
+    <div class="container">
+
+        <h2>My Cart</h2>
+
+        {% if cart_items %}
+
+            {% for item in cart_items %}
+
+                <div class="product-card">
+
+                    <h3>{{ item.name }}</h3>
+
+                    <p>
+                        Price: ₹{{ item.price }}
+                    </p>
+
+                    <p>
+    Quantity: {{ item.quantity }}
+</p>
+
+<div>
+    <form
+        method="POST"
+        action="{{ url_for('update_cart', product_id=item.product_id) }}"
+        style="display: inline;"
+    >
+        <input
+            type="hidden"
+            name="quantity"
+            value="{{ item.quantity - 1 }}"
+        >
+
+        <button type="submit" {% if item.quantity <= 1 %}disabled{% endif %}>
+            −
+        </button>
+    </form>
+
+    <strong>{{ item.quantity }}</strong>
+
+    <form
+        method="POST"
+        action="{{ url_for('update_cart', product_id=item.product_id) }}"
+        style="display: inline;"
+    >
+        <input
+            type="hidden"
+            name="quantity"
+            value="{{ item.quantity + 1 }}"
+        >
+
+        <button type="submit">
+            +
+        </button>
+    </form>
+</div>
+
+                    <p>
+                        Subtotal: ₹{{ item.subtotal }}
+                    </p>
+                  <form method="POST" action="{{ url_for('remove_from_cart', product_id=item.product_id) }}">
+    <button type="submit">
+        Remove
+    </button>
+</form>
+                </div>
+
+                <br>
+
+            {% endfor %}
+
+            <h3>
+                Total: ₹{{ total }}
+            </h3>
+
+        {% else %}
+
+            <p>Your cart is empty.</p>
+
+        {% endif %}
+
+        <br>
+
+        <a href="{{ url_for('checkout') }}">
+    Proceed to Checkout
+</a>
+
+<br><br>
+
+<a href="{{ url_for('home') }}">
+    ← Continue Shopping
+</a>
+
+    </div>
+
+</body>
+</html>

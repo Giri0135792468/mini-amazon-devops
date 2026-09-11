@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Admin - Products | Mini Amazon</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}"
+    >
+
+</head>
+
+<body>
+
+    <header>
+
+        <div class="navbar">
+
+            <h1>Mini Amazon</h1>
+
+            <nav>
+
+                <a href="/">Store</a>
+
+                <a href="/admin/products">Products</a>
+
+                <a href="/cart">Cart</a>
+
+                <a href="/logout">Logout</a>
+
+            </nav>
+
+        </div>
+
+    </header>
+
+
+    <main>
+
+        <div class="admin-header">
+
+            <div>
+
+                <h2>Product Management</h2>
+
+                <p>Manage products in Mini Amazon</p>
+
+            </div>
+
+            <a href="{{ url_for('admin_add_product') }}">
+                + Add Product
+            </a>
+
+        </div>
+
+
+        <div class="table-container">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>Image</th>
+
+                        <th>Product</th>
+
+                        <th>Description</th>
+
+                        <th>Price</th>
+
+                        <th>Actions</th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    {% if products %}
+
+                        {% for product in products %}
+
+                        <tr>
+
+                            <td>
+
+                                {% if product.get("image_url") %}
+
+                                    <img
+                                        src="{{ product.get('image_url') }}"
+                                        alt="{{ product.get('name', 'Product') }}"
+                                        class="admin-product-image"
+                                    >
+
+                                {% else %}
+
+                                    <span>No Image</span>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td>
+
+                                <strong>
+                                    {{ product.get("name", "Unnamed Product") }}
+                                </strong>
+
+                            </td>
+
+
+                            <td>
+
+                                {{ product.get("description", "") }}
+
+                            </td>
+
+
+                            <td>
+
+                                ₹{{ product.get("price", 0) }}
+
+                            </td>
+
+
+                            <td>
+
+                                <a href="{{ url_for('admin_edit_product', product_id=product.get('id')) }}">
+    Edit
+</a>
+
+                                <form
+    method="POST"
+    action="{{ url_for('admin_delete_product', product_id=product.get('id')) }}"
+    style="display: inline;"
+>
+    <button type="submit">
+        Delete
+    </button>
+</form>
+
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    {% else %}
+
+                        <tr>
+
+                            <td colspan="5">
+
+                                No products found.
+
+                            </td>
+
+                        </tr>
+
+                    {% endif %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </main>
+
+</body>
+
+</html>

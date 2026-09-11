@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Mini Amazon</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}"
+    >
+
+</head>
+
+<body>
+
+    <!-- =========================
+         NAVBAR
+         ========================= -->
+
+    <div class="navbar">
+
+        <div class="brand">
+            Mini Amazon
+        </div>
+
+        <div class="nav-links">
+
+            <a href="{{ url_for('home') }}">
+                Products
+            </a>
+
+            <a href="{{ url_for('view_cart') }}">
+                Cart
+            </a>
+
+            {% if session.get("token") %}
+
+                <span>
+                    Welcome, {{ session.get("email") }}
+                </span>
+
+                <a href="{{ url_for('logout') }}">
+                    Logout
+                </a>
+
+            {% else %}
+
+                <a href="{{ url_for('login') }}">
+                    Login
+                </a>
+
+                <a href="{{ url_for('register') }}">
+                    Register
+                </a>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         MAIN CONTENT
+         ========================= -->
+
+    <div class="container">
+
+        <div class="store-header">
+
+            <div>
+
+                <h2>Products</h2>
+
+                <p>
+                    Explore our latest products
+                </p>
+
+            </div>
+
+        </div>
+
+
+        {% if products %}
+
+            <div class="product-grid">
+
+                {% for product in products %}
+
+                    <div class="product-card">
+
+
+                        <!-- PRODUCT IMAGE -->
+
+                        <div class="product-image-container">
+
+                            {% if product.get("image_url") %}
+
+                                <img
+                                    src="{{ product.get('image_url') }}"
+                                    alt="{{ product.get('name', 'Product') }}"
+                                    class="product-image"
+                                >
+
+                            {% else %}
+
+                                <div class="product-image-placeholder">
+
+                                    No Image
+
+                                </div>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <!-- PRODUCT INFORMATION -->
+
+                        <div class="product-info">
+
+                            <h3>
+
+                                <a
+                                    href="{{ url_for(
+                                        'product_details',
+                                        product_id=product.id
+                                    ) }}"
+                                >
+
+                                    {{ product.name }}
+
+                                </a>
+
+                            </h3>
+
+
+                            <p class="price">
+
+                                ₹{{ product.price }}
+
+                            </p>
+
+
+                            <p class="description">
+
+                                {{ product.description }}
+
+                            </p>
+
+
+                            <a
+                                href="{{ url_for(
+                                    'product_details',
+                                    product_id=product.id
+                                ) }}"
+                                class="view-product-button"
+                            >
+
+                                View Product
+
+                            </a>
+
+                        </div>
+
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        {% else %}
+
+            <div class="empty-products">
+
+                <p>
+                    No products available.
+                </p>
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</body>
+
+</html>

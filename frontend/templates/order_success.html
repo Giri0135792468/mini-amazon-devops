@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Order Successful - Mini Amazon</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}"
+    >
+</head>
+
+<body>
+
+    <div class="navbar">
+        <div>Mini Amazon</div>
+
+        <div class="nav-links">
+            <a href="{{ url_for('home') }}">Products</a>
+            <a href="{{ url_for('view_cart') }}">Cart</a>
+            <a href="{{ url_for('logout') }}">Logout</a>
+        </div>
+    </div>
+
+    <div class="container">
+
+        <h2>Order Created Successfully!</h2>
+
+        <div class="product-card">
+
+            <h3>Order #{{ order.id }}</h3>
+
+            <p>
+                Total:
+                <strong>₹{{ order.total_amount }}</strong>
+            </p>
+
+            <p>
+                Status: {{ order.status }}
+            </p>
+
+            {% if payment %}
+                <p>
+                    Payment ID: {{ payment.id }}
+                </p>
+
+                <p>
+                    Payment Status: {{ payment.status }}
+                </p>
+            {% endif %}
+
+        </div>
+
+        <br>
+
+        <a href="{{ url_for('home') }}">
+            Continue Shopping
+        </a>
+
+    </div>
+
+</body>
+</html>

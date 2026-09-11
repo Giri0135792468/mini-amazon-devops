@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{{ product.name }} - Mini Amazon</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}"
+    >
+
+</head>
+
+<body>
+
+    <!-- =========================
+         NAVBAR
+         ========================= -->
+
+    <div class="navbar">
+
+        <div class="brand">
+            Mini Amazon
+        </div>
+
+        <div class="nav-links">
+
+            <a href="{{ url_for('home') }}">
+                Products
+            </a>
+
+            <a href="{{ url_for('view_cart') }}">
+                Cart
+            </a>
+
+            {% if session.get("token") %}
+
+                <span>
+                    Welcome, {{ session.get("email") }}
+                </span>
+
+                <a href="{{ url_for('logout') }}">
+                    Logout
+                </a>
+
+            {% else %}
+
+                <a href="{{ url_for('login') }}">
+                    Login
+                </a>
+
+                <a href="{{ url_for('register') }}">
+                    Register
+                </a>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         PRODUCT DETAILS
+         ========================= -->
+
+    <div class="container">
+
+        <div class="product-details">
+
+
+            <!-- PRODUCT IMAGE -->
+
+            <div class="product-details-image">
+
+                {% if product.get("image_url") %}
+
+                    <img
+                        src="{{ product.get('image_url') }}"
+                        alt="{{ product.get('name', 'Product') }}"
+                    >
+
+                {% else %}
+
+                    <div class="product-details-no-image">
+                        No Image Available
+                    </div>
+
+                {% endif %}
+
+            </div>
+
+
+            <!-- PRODUCT INFORMATION -->
+
+            <div class="product-details-info">
+
+                <h2>
+                    {{ product.name }}
+                </h2>
+
+                <p class="price">
+                    ₹{{ product.price }}
+                </p>
+
+                <p class="description">
+                    {{ product.description }}
+                </p>
+
+
+                <form
+                    method="POST"
+                    action="{{ url_for(
+                        'add_to_cart',
+                        product_id=product.id
+                    ) }}"
+                >
+
+                    <button type="submit">
+                        Add to Cart
+                    </button>
+
+                </form>
+
+
+                <br>
+
+                <a href="{{ url_for('home') }}">
+                    ← Back to Products
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>

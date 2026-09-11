@@ -1,0 +1,144 @@
+services:
+
+  redis:
+    image: redis:7
+    container_name: mini-amazon-redis
+    ports:
+      - "6379:6379"
+
+  mysql:
+    image: mysql:8
+    container_name: mini-amazon-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: mini_amazon
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  user-service:
+    build:
+      context: ./services/user-service
+    container_name: mini-amazon-user-service
+    env_file:
+      - ./services/user-service/.env
+    environment:
+      DB_HOST: mysql
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+    ports:
+      - "5000:5000"
+
+  product-service:
+     build:
+      context: ./services/product-service
+     container_name: mini-amazon-product-service
+     env_file:
+      - ./services/product-service/.env
+     volumes:
+      - "C:/Users/girid/.aws:/root/.aws:ro"
+     ports:
+      - "5001:5001"
+
+  cart-service:
+    build:
+      context: ./services/cart-service
+    container_name: mini-amazon-cart-service
+    env_file:
+      - ./services/cart-service/.env
+    environment:
+      REDIS_HOST: redis
+      PRODUCT_SERVICE_URL: http://product-service:5001
+    ports:
+      - "5002:5002"
+    depends_on:
+      - redis
+      - product-service
+
+  inventory-service:
+    build:
+      context: ./services/inventory-service
+    container_name: mini-amazon-inventory-service
+    env_file:
+      - ./services/inventory-service/.env
+    volumes:
+      - "C:/Users/girid/.aws:/root/.aws:ro"
+    ports:
+      - "5003:5003"
+
+  order-service:
+    build:
+      context: ./services/order-service
+    container_name: mini-amazon-order-service
+    env_file:
+      - ./services/order-service/.env
+    environment:
+      DB_HOST: mysql
+      INVENTORY_SERVICE_URL: http://inventory-service:5003
+      CART_SERVICE_URL: http://cart-service:5002
+      PAYMENT_SERVICE_URL: http://payment-service:5005
+      NOTIFICATION_SERVICE_URL: http://notification-service:5006
+    ports:
+      - "5004:5004"
+    depends_on:
+      - mysql
+      - inventory-service
+      - cart-service
+      - payment-service
+      - notification-service
+
+  payment-service:
+    build:
+      context: ./services/payment-service
+    container_name: mini-amazon-payment-service
+    env_file:
+      - ./services/payment-service/.env
+    environment:
+      NOTIFICATION_SERVICE_URL: http://notification-service:5006
+    ports:
+      - "5005:5005"
+    depends_on:
+      - notification-service
+
+  notification-service:
+    build:
+      context: ./services/notification-service
+    container_name: mini-amazon-notification-service
+    env_file:
+      - ./services/notification-service/.env
+    ports:
+      - "5006:5006"
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: mini-amazon-frontend
+    env_file:
+      - ./frontend/.env
+    environment:
+      USER_SERVICE_URL: http://user-service:5000
+      PRODUCT_SERVICE_URL: http://product-service:5001
+      CART_SERVICE_URL: http://cart-service:5002
+      ORDER_SERVICE_URL: http://order-service:5004
+      PAYMENT_SERVICE_URL: http://payment-service:5005
+      FRONTEND_PORT: 5007
+    ports:
+      - "5007:5007"
+    depends_on:
+      - user-service
+      - product-service
+      - cart-service
+      - order-service
+      - payment-service
+
+volumes:
+  mysql_data:

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login - Mini Amazon</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}"
+    >
+</head>
+
+<body>
+
+    <div class="navbar">
+        Mini Amazon
+    </div>
+
+    <div class="container">
+
+        <h2>Login</h2>
+
+        {% if error %}
+            <p>{{ error }}</p>
+        {% endif %}
+
+        <form method="POST">
+
+            <div>
+                <label>Email</label>
+                <br>
+                <input
+                    type="email"
+                    name="email"
+                    required
+                >
+            </div>
+
+            <br>
+
+            <div>
+                <label>Password</label>
+                <br>
+                <input
+                    type="password"
+                    name="password"
+                    required
+                >
+            </div>
+
+            <br>
+
+            <button type="submit">
+                Login
+            </button>
+
+        </form>
+
+    </div>
+
+</body>
+</html>
