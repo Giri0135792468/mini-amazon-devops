@@ -1,14 +1,8 @@
-resource "kubernetes_namespace" "mini" {
-  metadata {
-    name = var.namespace
-  }
-}
+
 
 
 resource "kubernetes_stateful_set" "redis" {
-   depends_on = [
-    kubernetes_namespace.mini
-  ]
+   
 metadata {
   name      = var.redis_name
   namespace = var.namespace
@@ -113,9 +107,7 @@ metadata {
 
 
 resource "kubernetes_service" "redis" {
-     depends_on = [
-    kubernetes_namespace.mini
-  ]
+
 metadata {
   name      = var.redis_name
   namespace = var.namespace
