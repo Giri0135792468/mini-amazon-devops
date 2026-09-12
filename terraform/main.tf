@@ -70,15 +70,3 @@ module "iam" {
   s3_bucket_arn      = module.s3.bucket_arn
   dynamodb_table_arn = module.dynamodb.table_arn
 }
-
-
-module "redis" {
-  source = "./modules/redis"
-
-  namespace = "mini"
-  redis_name = "redis"
-
-  depends_on = [
-    module.eks
-  ]
-}
