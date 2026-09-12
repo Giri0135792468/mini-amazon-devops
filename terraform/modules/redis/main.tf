@@ -1,8 +1,20 @@
-resource "kubernetes_stateful_set" "redis" {
+resource "kubernetes_namespace" "mini" {
   metadata {
-    name      = var.redis_name
-    namespace = var.namespace
+    name = var.namespace
   }
+}
+
+
+resource "kubernetes_stateful_set" "redis" {
+   depends_on = [
+    kubernetes_namespace.mini
+  ]
+metadata {
+  name      = var.redis_name
+  namespace = var.namespace
+
+  
+}
 
   spec {
     service_name = var.redis_name
@@ -101,10 +113,15 @@ resource "kubernetes_stateful_set" "redis" {
 
 
 resource "kubernetes_service" "redis" {
-  metadata {
-    name      = var.redis_name
-    namespace = var.namespace
-  }
+     depends_on = [
+    kubernetes_namespace.mini
+  ]
+metadata {
+  name      = var.redis_name
+  namespace = var.namespace
+
+
+}
 
   spec {
     cluster_ip = "None"
