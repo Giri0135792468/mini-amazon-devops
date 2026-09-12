@@ -70,3 +70,15 @@ module "iam" {
   s3_bucket_arn      = module.s3.bucket_arn
   dynamodb_table_arn = module.dynamodb.table_arn
 }
+
+
+
+module "k8s" {
+  source = "./modules/k8s"
+
+  namespace = "mini"
+
+  depends_on = [
+    module.eks
+  ]
+}
