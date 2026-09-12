@@ -12,6 +12,3 @@ resource "aws_dynamodb_table" "products" {
     Name = "mini-amazon-products"
   }
 }
-
-
-
