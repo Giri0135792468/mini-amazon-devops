@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: user-config
+  namespace: mini
+
+data:
+  DB_HOST: ""
+  DB_PORT: "3306"
+  DB_NAME: "mini_amazon"
+  DB_USER: "admin"

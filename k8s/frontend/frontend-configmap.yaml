@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-config
+  namespace: mini
+
+data:
+  USER_SERVICE_URL: "http://user-service:5000"
+  PRODUCT_SERVICE_URL: "http://product-service:5001"
+  CART_SERVICE_URL: "http://cart-service:5002"
+  ORDER_SERVICE_URL: "http://order-service:5004"
+  PAYMENT_SERVICE_URL: "http://payment-service:5005"

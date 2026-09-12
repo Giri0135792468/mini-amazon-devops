@@ -1,0 +1,14 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: frontend-pdb
+  namespace: mini
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: frontend
+
+
+#With our 2 Frontend replicas, this means Kubernetes should keep 
+#at least 1 Frontend Pod available during voluntary disruptions.

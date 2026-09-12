@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: mini
+
+spec:
+  selector:
+    app: frontend
+
+  ports:
+    - port: 5003
+      targetPort: 5003
+      protocol: TCP
+
+  type: ClusterIP

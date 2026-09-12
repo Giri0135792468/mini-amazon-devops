@@ -75,3 +75,6 @@ resource "aws_iam_role_policy_attachment" "product_service" {
   role       = aws_iam_role.product_service.name
   policy_arn = aws_iam_policy.product_service.arn
 }
+
+
+
