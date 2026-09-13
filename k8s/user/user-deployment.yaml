@@ -24,13 +24,11 @@ spec:
           ports:
             - containerPort: 5000
 
-          envFrom:
-            - configMapRef:
-                name: user-config
-
-            - secretRef:
-                name: user-secret
-
+      envFrom:
+        - configMapRef:
+            name: database-config
+        - secretRef:
+            name: database-secret
           resources:
             requests:
               cpu: "100m"

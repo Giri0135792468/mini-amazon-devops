@@ -6,11 +6,12 @@ metadata:
 
 spec:
   replicas: 2
+
   strategy:
-  type: RollingUpdate
-  rollingUpdate:
-    maxUnavailable: 0
-    maxSurge: 1
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
 
   selector:
     matchLabels:
@@ -22,43 +23,47 @@ spec:
         app: order-service
 
     spec:
-    affinity:
-      podAntiAffinity:
-        preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchLabels:
-                  app: order-service
-              topologyKey: kubernetes.io/hostname
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: order-service
+                topologyKey: kubernetes.io/hostname
+
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
         runAsGroup: 1000
         fsGroup: 1000
+
       containers:
         - name: order-service
           image: girijos/mini-amazon-order-service:1.0
+
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
               drop:
                 - ALL
+
           ports:
             - containerPort: 5004
 
           envFrom:
             - configMapRef:
-                name: order-config
-
+                name: database-config
             - secretRef:
-                name: order-secret
+                name: database-secret
+            - configMapRef:
+                name: order-config
 
           resources:
             requests:
               cpu: "100m"
               memory: "128Mi"
-
             limits:
               cpu: "250m"
               memory: "256Mi"

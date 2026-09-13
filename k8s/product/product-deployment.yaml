@@ -47,12 +47,11 @@ spec:
                 - ALL
           ports:
             - containerPort: 5001
+envFrom:
+  - configMapRef:
+      name: aws-config
 
-          envFrom:
-            - configMapRef:
-                name: product-config
-
-          resources:
+      resources:
             requests:
               cpu: "100m"
               memory: "128Mi"
@@ -61,14 +60,14 @@ spec:
               cpu: "250m"
               memory: "256Mi"
 
-          readinessProbe:
+      readinessProbe:
             httpGet:
               path: /health
               port: 5001
             initialDelaySeconds: 10
             periodSeconds: 10
 
-          livenessProbe:
+      livenessProbe:
             httpGet:
               path: /health
               port: 5001

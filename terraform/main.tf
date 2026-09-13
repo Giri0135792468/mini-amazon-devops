@@ -89,14 +89,22 @@ module "alb_controller" {
 
 
 
-module "k8s" {
-  source = "./modules/k8s"
+mmodule "k8s" {
+  source = "./modules/kubernetes"
 
   namespace = "mini"
 
-  depends_on = [
-    module.eks
-  ]
+  rds_endpoint           = module.rds.db_endpoint
+  db_name                = var.db_name
+  db_username            = var.db_username
+  db_password            = var.db_password
+
+  dynamodb_table_name    = module.dynamodb.table_name
+  s3_bucket_name         = module.s3.bucket_name
+
+  product_service_role_arn = module.iam.product_service_role_arn
+
+  depends_on = [module.eks]
 }
 
 
