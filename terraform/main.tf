@@ -74,6 +74,20 @@ module "iam" {
 }
 
 
+module "alb_controller" {
+  source = "./modules/alb-controller"
+
+  cluster_name      = module.eks.cluster_name
+  region            = var.aws_region
+  oidc_issuer       = module.eks.cluster_oidc_issuer
+  oidc_provider_arn = module.eks.oidc_provider_arn
+
+  depends_on = [
+    module.eks
+  ]
+}
+
+
 
 module "k8s" {
   source = "./modules/k8s"
@@ -84,3 +98,7 @@ module "k8s" {
     module.eks
   ]
 }
+
+
+
+
