@@ -45,6 +45,7 @@ resource "helm_release" "alb_controller" {
   namespace  = "kube-system"
   repository = "https://aws.github.io/eks-charts"
   chart      = "aws-load-balancer-controller"
+  version    = "1.14.0"
 
   set = [
     {
@@ -54,6 +55,10 @@ resource "helm_release" "alb_controller" {
     {
       name  = "region"
       value = var.region
+    },
+    {
+      name  = "vpcId"
+      value = var.vpc_id
     },
     {
       name  = "serviceAccount.create"

@@ -21,11 +21,11 @@ resource "aws_subnet" "public" {
 
   map_public_ip_on_launch = true
 
-tags = {
-  Name                     = "mini-amazon-public-${count.index + 1}"
-  "kubernetes.io/role/elb" = "1"
-  "kubernetes.io/cluster/${var.cluster_name}" = "shared"
-}
+  tags = {
+    Name                                        = "mini-amazon-public-${count.index + 1}"
+    "kubernetes.io/role/elb"                    = "1"
+    "kubernetes.io/cluster/${var.cluster_name}" = "shared"
+  }
 }
 
 
@@ -38,11 +38,11 @@ resource "aws_subnet" "private" {
 
   availability_zone = var.availability_zones[count.index]
 
-tags = {
-  Name                              = "mini-amazon-private-${count.index + 1}"
-  "kubernetes.io/role/internal-elb" = "1"
-  "kubernetes.io/cluster/${var.cluster_name}" = "shared"
-}
+  tags = {
+    Name                                        = "mini-amazon-private-${count.index + 1}"
+    "kubernetes.io/role/internal-elb"           = "1"
+    "kubernetes.io/cluster/${var.cluster_name}" = "shared"
+  }
 }
 
 resource "aws_internet_gateway" "main" {

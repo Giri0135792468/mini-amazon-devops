@@ -29,9 +29,9 @@ resource "aws_db_instance" "mysql" {
   db_subnet_group_name   = aws_db_subnet_group.main.name
   vpc_security_group_ids = [aws_security_group.rds.id]
 
-  publicly_accessible    = false
-  multi_az               = false
-  skip_final_snapshot    = true
+  publicly_accessible = false
+  multi_az            = false
+  skip_final_snapshot = true
 
   tags = {
     Name = "mini-amazon-mysql"

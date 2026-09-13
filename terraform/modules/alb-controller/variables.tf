@@ -1,19 +1,19 @@
 variable "cluster_name" {
-  description = "EKS cluster name"
-  type        = string
+  type = string
 }
 
 variable "region" {
-  description = "AWS region"
-  type        = string
+  type = string
 }
 
 variable "oidc_issuer" {
-  description = "EKS OIDC issuer URL"
-  type        = string
+  type = string
 }
 
 variable "oidc_provider_arn" {
-  description = "EKS OIDC provider ARN"
-  type        = string
+  type = string
+}
+
+variable "vpc_id" {
+  type = string
 }

@@ -37,18 +37,18 @@ resource "aws_eks_cluster" "main" {
   version  = var.kubernetes_version
 
   enabled_cluster_log_types = [
-  "api",
-  "audit",
-  "authenticator",
-  "controllerManager",
-  "scheduler"
-]
+    "api",
+    "audit",
+    "authenticator",
+    "controllerManager",
+    "scheduler"
+  ]
   vpc_config {
-  subnet_ids = var.private_subnet_ids
+    subnet_ids = var.private_subnet_ids
 
-  endpoint_private_access = true
-  endpoint_public_access  = true
-}
+    endpoint_private_access = true
+    endpoint_public_access  = true
+  }
 
   depends_on = [
     aws_iam_role_policy_attachment.cluster
@@ -122,7 +122,7 @@ resource "aws_eks_node_group" "main" {
   subnet_ids = var.private_subnet_ids
 
   instance_types = [var.node_instance_type]
-  capacity_type = "ON_DEMAND"
+  capacity_type  = "ON_DEMAND"
   scaling_config {
     desired_size = var.node_desired_size
     min_size     = var.node_min_size

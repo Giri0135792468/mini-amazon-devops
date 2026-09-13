@@ -1,8 +1,8 @@
 # Mini Amazon AWS infrastructure
 
 module "vpc" {
-  source = "./modules/vpc"
-  cluster_name = var.cluster_name
+  source               = "./modules/vpc"
+  cluster_name         = var.cluster_name
   vpc_cidr             = var.vpc_cidr
   availability_zones   = var.availability_zones
   public_subnet_cidrs  = var.public_subnet_cidrs
@@ -14,8 +14,8 @@ module "vpc" {
 module "rds" {
   source = "./modules/rds"
 
-  vpc_id               = module.vpc.vpc_id
-  private_subnet_ids   = module.vpc.private_subnet_ids
+  vpc_id                = module.vpc.vpc_id
+  private_subnet_ids    = module.vpc.private_subnet_ids
   eks_security_group_id = module.eks.cluster_security_group_id
 
   db_name     = var.db_name
@@ -49,7 +49,7 @@ module "eks" {
   vpc_id             = module.vpc.vpc_id
   private_subnet_ids = module.vpc.private_subnet_ids
 
- 
+
 
   node_instance_type = var.node_instance_type
   node_desired_size  = var.node_desired_size
@@ -63,7 +63,7 @@ module "eks" {
 module "iam" {
   source = "./modules/iam"
 
-  eks_oidc_issuer      = module.eks.cluster_oidc_issuer
+  eks_oidc_issuer       = module.eks.cluster_oidc_issuer
   eks_oidc_provider_arn = module.eks.oidc_provider_arn
 
   product_service_namespace       = "mini"
@@ -79,12 +79,11 @@ module "alb_controller" {
 
   cluster_name      = module.eks.cluster_name
   region            = var.aws_region
+  vpc_id            = module.vpc.vpc_id
   oidc_issuer       = module.eks.cluster_oidc_issuer
   oidc_provider_arn = module.eks.oidc_provider_arn
 
-  depends_on = [
-    module.eks
-  ]
+  depends_on = [module.eks]
 }
 
 
@@ -94,13 +93,13 @@ module "k8s" {
 
   namespace = "mini"
 
-  rds_endpoint           = module.rds.db_endpoint
-  db_name                = var.db_name
-  db_username            = var.db_username
-  db_password            = var.db_password
+  rds_endpoint = module.rds.db_endpoint
+  db_name      = var.db_name
+  db_username  = var.db_username
+  db_password  = var.db_password
 
-  dynamodb_table_name    = module.dynamodb.table_name
-  s3_bucket_name         = module.s3.bucket_name
+  dynamodb_table_name = module.dynamodb.table_name
+  s3_bucket_name      = module.s3.bucket_name
 
   product_service_role_arn = module.iam.product_service_role_arn
 
