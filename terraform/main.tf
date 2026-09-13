@@ -90,7 +90,7 @@ module "alb_controller" {
 
 
 module "k8s" {
-  source = "./modules/kubernetes"
+  source = "./modules/k8s"
 
   namespace = "mini"
 
