@@ -1,6 +1,6 @@
 aws_region = "ap-south-2"
 
-db_password = "12435aA@"
+db_password = "12435aA#"
 
 cluster_name       = "mini-amazon-eks"
 kubernetes_version = "1.33"
