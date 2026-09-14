@@ -1,7 +1,7 @@
 aws_region = "ap-south-2"
 
 db_password = "12435aA#"
-jwt_secret = 17fa4457aaaae115679aab9c8c028cd3ebae55632600981fda92468a60765b57
+jwt_secret = "17fa4457aaaae115679aab9c8c028cd3ebae55632600981fda92468a60765b57"
 cluster_name       = "mini-amazon-eks"
 kubernetes_version = "1.33"
 
