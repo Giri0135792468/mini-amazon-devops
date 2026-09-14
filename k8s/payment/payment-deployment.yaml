@@ -17,19 +17,22 @@ spec:
         app: payment-service
 
     spec:
-    securityContext:
+      securityContext:
         runAsNonRoot: true
         runAsUser: 1000
         runAsGroup: 1000
         fsGroup: 1000
-    containers:
+
+      containers:
         - name: payment-service
           image: girijos/mini-amazon-payment-service:1.0
+
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
               drop:
                 - ALL
+
           ports:
             - containerPort: 5005
 
@@ -38,6 +41,7 @@ spec:
                 name: payment-config
             - secretRef:
                 name: application-secret
+
           resources:
             requests:
               cpu: "100m"
