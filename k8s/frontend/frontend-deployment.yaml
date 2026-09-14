@@ -1,5 +1,6 @@
 apiVersion: apps/v1
 kind: Deployment
+
 metadata:
   name: frontend
   namespace: mini
@@ -51,14 +52,18 @@ spec:
 
           ports:
             - containerPort: 5003
+
           env:
             - name: FRONTEND_PORT
               value: "5003"
+
           envFrom:
             - configMapRef:
-              name: frontend-config
+                name: frontend-config
+
             - secretRef:
-              name: application-secret
+                name: application-secret
+
           resources:
             requests:
               cpu: "100m"
