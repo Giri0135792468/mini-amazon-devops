@@ -6,11 +6,12 @@ metadata:
 
 spec:
   replicas: 2
+
   strategy:
-  type: RollingUpdate
-  rollingUpdate:
-    maxUnavailable: 0
-    maxSurge: 1
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
 
   selector:
     matchLabels:
@@ -23,51 +24,56 @@ spec:
 
     spec:
       serviceAccountName: product-service-sa
-    affinity:
-      podAntiAffinity:
-        preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchLabels:
-                  app: product-service
-              topologyKey: kubernetes.io/hostname
+
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: product-service
+                topologyKey: kubernetes.io/hostname
+
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
         runAsGroup: 1000
         fsGroup: 1000
+
       containers:
         - name: product-service
           image: girijos/mini-amazon-product-service:1.0
+
+          ports:
+            - containerPort: 5001
+
+          envFrom:
+            - configMapRef:
+                name: aws-config
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
+
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
               drop:
                 - ALL
-          ports:
-            - containerPort: 5001
-envFrom:
-  - configMapRef:
-      name: aws-config
 
-      resources:
-            requests:
-              cpu: "100m"
-              memory: "128Mi"
-
-            limits:
-              cpu: "250m"
-              memory: "256Mi"
-
-      readinessProbe:
+          readinessProbe:
             httpGet:
               path: /health
               port: 5001
             initialDelaySeconds: 10
             periodSeconds: 10
 
-      livenessProbe:
+          livenessProbe:
             httpGet:
               path: /health
               port: 5001
