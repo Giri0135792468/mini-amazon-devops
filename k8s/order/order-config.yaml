@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: order-config
+  namespace: mini
+data:
+  CART_SERVICE_URL: http://cart-service:5002
+  PAYMENT_SERVICE_URL: http://payment-service:5005
+  NOTIFICATION_SERVICE_URL: http://notification-service:5006
