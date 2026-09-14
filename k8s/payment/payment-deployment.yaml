@@ -38,6 +38,10 @@ spec:
 
           envFrom:
             - configMapRef:
+                name: database-config
+            - secretRef:
+                name: database-secret
+            - configMapRef:
                 name: payment-config
             - secretRef:
                 name: application-secret
