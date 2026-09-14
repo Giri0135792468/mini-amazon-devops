@@ -43,3 +43,9 @@ variable "jwt_secret" {
   type      = string
   sensitive = true
 }
+
+
+variable "flask_secret_key" {
+  type      = string
+  sensitive = true
+}
