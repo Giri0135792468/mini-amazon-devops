@@ -17,6 +17,12 @@ spec:
         app: user-service
 
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+
       containers:
         - name: user-service
           image: girijos/mini-amazon-user-service:1.0
@@ -24,19 +30,25 @@ spec:
           ports:
             - containerPort: 5000
 
-      envFrom:
-        - configMapRef:
-            name: database-config
-        - secretRef:
-            name: database-secret
+          envFrom:
+            - configMapRef:
+                name: database-config
+            - secretRef:
+                name: database-secret
+
           resources:
             requests:
               cpu: "100m"
               memory: "128Mi"
-
             limits:
               cpu: "250m"
               memory: "256Mi"
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
 
           readinessProbe:
             httpGet:
