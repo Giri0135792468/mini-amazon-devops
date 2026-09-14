@@ -65,5 +65,6 @@ resource "kubernetes_secret" "application" {
 
   data = {
     JWT_SECRET = var.jwt_secret
+    FLASK_SECRET_KEY = var.flask_secret_key
   }
 }
