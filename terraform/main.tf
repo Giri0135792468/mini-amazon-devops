@@ -100,7 +100,7 @@ module "k8s" {
   jwt_secret = var.jwt_secret
   dynamodb_table_name = module.dynamodb.table_name
   s3_bucket_name      = module.s3.bucket_name
-
+  flask_secret_key = var.flask_secret_key
   product_service_role_arn = module.iam.product_service_role_arn
 
   depends_on = [module.eks]
