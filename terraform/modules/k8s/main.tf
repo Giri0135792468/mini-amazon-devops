@@ -9,11 +9,10 @@ resource "kubernetes_config_map" "aws_config" {
     name      = "aws-config"
     namespace = var.namespace
   }
-
- data = {
-  AWS_REGION      = "ap-south-2"
-  DYNAMODB_TABLE  = var.dynamodb_table_name
-  S3_BUCKET_NAME  = var.s3_bucket_name
+data = {
+  AWS_REGION     = "ap-south-2"
+  DYNAMODB_TABLE = var.dynamodb_table_name
+  S3_BUCKET      = var.s3_bucket_name
 }
 }
 
