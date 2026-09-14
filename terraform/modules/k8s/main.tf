@@ -54,3 +54,17 @@ resource "kubernetes_service_account" "product_service" {
     }
   }
 }
+
+
+resource "kubernetes_secret" "application" {
+  metadata {
+    name      = "application-secret"
+    namespace = var.namespace
+  }
+
+  type = "Opaque"
+
+  data = {
+    JWT_SECRET = var.jwt_secret
+  }
+}

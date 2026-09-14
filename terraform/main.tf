@@ -97,7 +97,7 @@ module "k8s" {
   db_name      = var.db_name
   db_username  = var.db_username
   db_password  = var.db_password
-
+  jwt_secret = var.jwt_secret
   dynamodb_table_name = module.dynamodb.table_name
   s3_bucket_name      = module.s3.bucket_name
 

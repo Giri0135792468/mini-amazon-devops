@@ -59,7 +59,8 @@ spec:
                 name: database-secret
             - configMapRef:
                 name: order-config
-
+            - secretRef:
+                name: application-secret
           resources:
             requests:
               cpu: "100m"

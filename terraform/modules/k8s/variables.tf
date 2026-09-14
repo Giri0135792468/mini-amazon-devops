@@ -38,3 +38,8 @@ variable "product_service_role_arn" {
   description = "IAM role ARN for Product Service IRSA"
   type        = string
 }
+
+variable "jwt_secret" {
+  type      = string
+  sensitive = true
+}

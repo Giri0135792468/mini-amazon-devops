@@ -35,7 +35,8 @@ spec:
                 name: database-config
             - secretRef:
                 name: database-secret
-
+            - secretRef:
+                name: application-secret
           resources:
             requests:
               cpu: "100m"

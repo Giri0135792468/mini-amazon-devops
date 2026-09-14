@@ -93,3 +93,9 @@ variable "s3_bucket_name" {
   type        = string
   default     = "mini-amazon-product-images"
 }
+
+
+variable "jwt_secret" {
+  type      = string
+  sensitive = true
+}
