@@ -15,7 +15,7 @@ spec:
 
   selector:
     matchLabels:
-      app: cart
+      app: cart-service
 
   template:
     metadata:
