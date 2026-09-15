@@ -7,3 +7,4 @@ metadata:
 data:
   REDIS_HOST: redis
   REDIS_PORT: "6379"
+  PRODUCT_SERVICE_URL: http://product-service:5001
