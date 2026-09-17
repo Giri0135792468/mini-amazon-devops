@@ -17,21 +17,32 @@ pipeline {
             }
         }
 
-        stage('Terraform Plan') {
-            steps {
-                dir('terraform') {
-                    sh 'terraform plan'
-                }
+stage('Terraform Plan') {
+    steps {
+        withCredentials([
+            string(credentialsId: 'db-password', variable: 'TF_VAR_db_password'),
+            string(credentialsId: 'jwt-secret', variable: 'TF_VAR_jwt_secret'),
+            string(credentialsId: 'flask-secret-key', variable: 'TF_VAR_flask_secret_key')
+        ]) {
+            dir('terraform') {
+                sh 'terraform plan'
             }
         }
+    }
+}
 
 stage('Terraform Apply') {
     steps {
-        dir('terraform') {
-            sh 'terraform apply -auto-approve'
+        withCredentials([
+            string(credentialsId: 'db-password', variable: 'TF_VAR_db_password'),
+            string(credentialsId: 'jwt-secret', variable: 'TF_VAR_jwt_secret'),
+            string(credentialsId: 'flask-secret-key', variable: 'TF_VAR_flask_secret_key')
+        ]) {
+            dir('terraform') {
+                sh 'terraform apply -auto-approve'
+            }
         }
     }
-
 }
 stage('Test') {
     steps {
