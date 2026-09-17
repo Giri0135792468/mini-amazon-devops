@@ -1,5 +1,12 @@
 pipeline {
     agent any
+    parameters {
+        booleanParam(
+            name: 'DESTROY_INFRA',
+            defaultValue: false,
+            description: 'Destroy all Terraform infrastructure'
+        )
+    }
 environment {
     IMAGE_TAG = "${BUILD_NUMBER}"
 }
@@ -124,6 +131,23 @@ stage('Verify Deployment') {
         '''
     }
 }
-
+stage('Destroy Infrastructure') {
+    when {
+        expression {
+            params.DESTROY_INFRA
+        }
+    }
+    steps {
+        withCredentials([
+            string(credentialsId: 'db-password', variable: 'TF_VAR_db_password'),
+            string(credentialsId: 'jwt-secret', variable: 'TF_VAR_jwt_secret'),
+            string(credentialsId: 'flask-secret-key', variable: 'TF_VAR_flask_secret_key')
+        ]) {
+            dir('terraform') {
+                sh 'terraform destroy -auto-approve'
+            }
+        }
+    }
+}
     }
 }
