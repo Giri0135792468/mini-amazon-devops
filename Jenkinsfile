@@ -111,7 +111,7 @@ stage('Deploy to EKS') {
             find /tmp/mini-amazon-k8s -type f -name "*.yaml" \
                 -exec sed -i "s/:1.0/:${IMAGE_TAG}/g" {} +
 
-            kubectl apply -f /tmp/mini-amazon-k8s/ -n mini
+            kubectl apply -f /tmp/mini-amazon-k8s/ -n mini --recursive
         '''
     }
 }
