@@ -1,6 +1,8 @@
 pipeline {
     agent any
-
+environment {
+    IMAGE_TAG = "${BUILD_NUMBER}"
+}
     stages {
 
         stage('Checkout') {
@@ -54,13 +56,13 @@ stage('Test') {
 stage('Build Docker Images') {
     steps {
         sh '''
-            docker build -t girijos/mini-amazon-user-service:1.0 ./services/user-service
-            docker build -t girijos/mini-amazon-product-service:1.0 ./services/product-service
-            docker build -t girijos/mini-amazon-cart-service:1.0 ./services/cart-service
-            docker build -t girijos/mini-amazon-order-service:1.0 ./services/order-service
-            docker build -t girijos/mini-amazon-payment-service:1.0 ./services/payment-service
-            docker build -t girijos/mini-amazon-notification-service:1.0 ./services/notification-service
-            docker build -t girijos/mini-amazon-frontend:1.0 ./frontend
+            docker build -t girijos/mini-amazon-user-service:${IMAGE_TAG} ./services/user-service
+            docker build -t girijos/mini-amazon-product-service:${IMAGE_TAG} ./services/product-service
+            docker build -t girijos/mini-amazon-cart-service:${IMAGE_TAG} ./services/cart-service
+            docker build -t girijos/mini-amazon-order-service:${IMAGE_TAG} ./services/order-service
+            docker build -t girijos/mini-amazon-payment-service:${IMAGE_TAG} ./services/payment-service
+            docker build -t girijos/mini-amazon-notification-service:${IMAGE_TAG} ./services/notification-service
+            docker build -t girijos/mini-amazon-frontend:${IMAGE_TAG} ./frontend
         '''
     }
 }
@@ -74,13 +76,13 @@ stage('Push Docker Images') {
             sh '''
                 echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 
-                docker push girijos/mini-amazon-user-service:1.0
-                docker push girijos/mini-amazon-product-service:1.0
-                docker push girijos/mini-amazon-cart-service:1.0
-                docker push girijos/mini-amazon-order-service:1.0
-                docker push girijos/mini-amazon-payment-service:1.0
-                docker push girijos/mini-amazon-notification-service:1.0
-                docker push girijos/mini-amazon-frontend:1.0
+                docker push girijos/mini-amazon-user-service:${IMAGE_TAG}
+                docker push girijos/mini-amazon-product-service:${IMAGE_TAG}
+                docker push girijos/mini-amazon-cart-service:${IMAGE_TAG}
+                docker push girijos/mini-amazon-order-service:${IMAGE_TAG}
+                docker push girijos/mini-amazon-payment-service:${IMAGE_TAG}
+                docker push girijos/mini-amazon-notification-service:${IMAGE_TAG}
+                docker push girijos/mini-amazon-frontend:${IMAGE_TAG}
 
                 docker logout
             '''
@@ -103,7 +105,14 @@ stage('Configure EKS Access') {
 
 stage('Deploy to EKS') {
     steps {
-        sh 'kubectl apply -R -f k8s/ -n mini'
+        sh '''
+            cp -R k8s /tmp/mini-amazon-k8s
+
+            find /tmp/mini-amazon-k8s -type f -name "*.yaml" \
+                -exec sed -i "s/:1.0/:${IMAGE_TAG}/g" {} +
+
+            kubectl apply -f /tmp/mini-amazon-k8s/ -n mini
+        '''
     }
 }
 stage('Verify Deployment') {
