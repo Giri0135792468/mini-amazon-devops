@@ -74,37 +74,33 @@ module "iam" {
 }
 
 
-module "alb_controller" {
-  source = "./modules/alb-controller"
-
-  cluster_name      = module.eks.cluster_name
-  region            = var.aws_region
-  vpc_id            = module.vpc.vpc_id
-  oidc_issuer       = module.eks.cluster_oidc_issuer
-  oidc_provider_arn = module.eks.oidc_provider_arn
-
-  depends_on = [module.eks]
-}
+# module "alb_controller" {
+#   source = "./modules/alb-controller"
+#   cluster_name = module.eks.cluster_name
+#   region = var.aws_region
+#   vpc_id = module.vpc.vpc_id
+#   oidc_issuer = module.eks.cluster_oidc_issuer
+#   oidc_provider_arn = module.eks.oidc_provider_arn
+#   depends_on = [module.eks]
+# }
 
 
 
-module "k8s" {
-  source = "./modules/k8s"
-
-  namespace = "mini"
-
-  rds_endpoint = module.rds.db_endpoint
-  db_name      = var.db_name
-  db_username  = var.db_username
-  db_password  = var.db_password
-  jwt_secret = var.jwt_secret
-  dynamodb_table_name = module.dynamodb.table_name
-  s3_bucket_name      = module.s3.bucket_name
-  flask_secret_key = var.flask_secret_key
-  product_service_role_arn = module.iam.product_service_role_arn
-
-  depends_on = [module.eks]
-}
+# module "k8s" {
+#   source = "./modules/k8s"
+#
+#   namespace = "mini"
+#   rds_endpoint = module.rds.db_endpoint
+#   db_name = var.db_name
+#   db_username = var.db_username
+#   db_password = var.db_password
+#   dynamodb_table_name = module.dynamodb.table_name
+#   s3_bucket_name = module.s3.bucket_name
+#   product_service_role_arn = module.iam.product_service_role_arn
+#   jwt_secret = var.jwt_secret
+#   flask_secret_key = var.flask_secret_key
+#   depends_on = [module.eks]
+# }
 
 
 
