@@ -92,7 +92,7 @@ stage('Configure EKS Access') {
 
 stage('Deploy to EKS') {
     steps {
-        sh 'kubectl apply -f k8s/*.yaml -n mini'
+        sh 'kubectl apply -R -f k8s/ -n mini'
     }
 }
 stage('Verify Deployment') {
