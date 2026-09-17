@@ -29,25 +29,35 @@ pipeline {
             }
         }
 
-stage('Terraform AWS Bootstrap') {
-    steps {
-        withCredentials([
-            string(credentialsId: 'db-password', variable: 'TF_VAR_db_password'),
-            string(credentialsId: 'jwt-secret', variable: 'TF_VAR_jwt_secret'),
-            string(credentialsId: 'flask-secret-key', variable: 'TF_VAR_flask_secret_key')
-        ]) {
-            dir('terraform') {
-                sh '''
-                    terraform apply \
-                        -target=module.vpc \
-                        -target=module.eks \
-                        -target=module.iam \
-                        -auto-approve
-                '''
+        stage('Terraform AWS Bootstrap') {
+            steps {
+                withCredentials([
+                    string(
+                        credentialsId: 'db-password',
+                        variable: 'TF_VAR_db_password'
+                    ),
+                    string(
+                        credentialsId: 'jwt-secret',
+                        variable: 'TF_VAR_jwt_secret'
+                    ),
+                    string(
+                        credentialsId: 'flask-secret-key',
+                        variable: 'TF_VAR_flask_secret_key'
+                    )
+                ]) {
+                    dir('terraform') {
+                        sh '''
+                            terraform apply \
+                                -target=module.vpc \
+                                -target=module.eks \
+                                -target=module.iam \
+                                -auto-approve
+                        '''
+                    }
+                }
             }
         }
-    }
-}
+
         stage('Terraform Apply') {
             steps {
                 withCredentials([
@@ -163,103 +173,106 @@ stage('Terraform AWS Bootstrap') {
             }
         }
 
-stage('Destroy Infrastructure') {
-    when {
-        expression {
-            params.DESTROY_INFRA
-        }
-    }
+        stage('Destroy Infrastructure') {
 
-    steps {
-        withCredentials([
-            string(
-                credentialsId: 'db-password',
-                variable: 'TF_VAR_db_password'
-            ),
-            string(
-                credentialsId: 'jwt-secret',
-                variable: 'TF_VAR_jwt_secret'
-            ),
-            string(
-                credentialsId: 'flask-secret-key',
-                variable: 'TF_VAR_flask_secret_key'
-            )
-        ]) {
+            when {
+                expression {
+                    params.DESTROY_INFRA
+                }
+            }
 
-            sh '''
-                set -e
+            steps {
 
-                echo "========================================"
-                echo "Preparing infrastructure for destruction"
-                echo "========================================"
+                withCredentials([
+                    string(
+                        credentialsId: 'db-password',
+                        variable: 'TF_VAR_db_password'
+                    ),
+                    string(
+                        credentialsId: 'jwt-secret',
+                        variable: 'TF_VAR_jwt_secret'
+                    ),
+                    string(
+                        credentialsId: 'flask-secret-key',
+                        variable: 'TF_VAR_flask_secret_key'
+                    )
+                ]) {
 
-                # ----------------------------------------
-                # 1. Configure EKS access
-                # ----------------------------------------
-                echo "Configuring EKS access..."
+                    sh '''
+                        set -e
 
-                aws eks update-kubeconfig \
-                    --region ap-south-2 \
-                    --name mini-amazon-eks || true
+                        echo "========================================"
+                        echo "Preparing infrastructure for destruction"
+                        echo "========================================"
 
-                # ----------------------------------------
-                # 2. Remove Kubernetes Ingress
-                # ----------------------------------------
-                echo "Removing Kubernetes ingress..."
+                        # ----------------------------------------
+                        # 1. Configure EKS access
+                        # ----------------------------------------
+                        echo "Configuring EKS access..."
 
-                kubectl delete ingress \
-                    --all \
-                    -n mini \
-                    --ignore-not-found=true || true
-
-                # ----------------------------------------
-                # 3. Remove LoadBalancer Services
-                # ----------------------------------------
-                echo "Removing Kubernetes LoadBalancer services..."
-
-                kubectl get svc \
-                    -n mini \
-                    --field-selector spec.type=LoadBalancer \
-                    -o name 2>/dev/null | \
-                    xargs -r kubectl delete -n mini || true
-
-                # ----------------------------------------
-                # 4. Wait for AWS Load Balancers
-                # ----------------------------------------
-                echo "Waiting for AWS Load Balancers to disappear..."
-
-                sleep 60
-
-                # ----------------------------------------
-                # 5. Delete Kubernetes namespace
-                # ----------------------------------------
-                echo "Deleting Kubernetes namespace..."
-
-                kubectl delete namespace mini \
-                    --ignore-not-found=true || true
-
-                # ----------------------------------------
-                # 6. Empty versioned S3 bucket
-                # ----------------------------------------
-                echo "========================================"
-                echo "Emptying S3 bucket"
-                echo "========================================"
-
-                BUCKET="mini-amazon-product-images"
-
-                if aws s3api head-bucket \
-                    --bucket "$BUCKET" \
-                    --region ap-south-2 2>/dev/null
-                then
-
-                    while true
-                    do
-                        VERSIONS=$(aws s3api list-object-versions \
-                            --bucket "$BUCKET" \
+                        aws eks update-kubeconfig \
                             --region ap-south-2 \
-                            --output json)
+                            --name mini-amazon-eks || true
 
-                        DELETE_JSON=$(echo "$VERSIONS" | python3 -c '
+                        # ----------------------------------------
+                        # 2. Remove Kubernetes Ingress
+                        # ----------------------------------------
+                        echo "Removing Kubernetes ingress..."
+
+                        kubectl delete ingress \
+                            --all \
+                            -n mini \
+                            --ignore-not-found=true || true
+
+                        # ----------------------------------------
+                        # 3. Remove LoadBalancer Services
+                        # ----------------------------------------
+                        echo "Removing Kubernetes LoadBalancer services..."
+
+                        kubectl get svc \
+                            -n mini \
+                            --field-selector spec.type=LoadBalancer \
+                            -o name 2>/dev/null | \
+                            xargs -r kubectl delete -n mini || true
+
+                        # ----------------------------------------
+                        # 4. Wait for AWS Load Balancers
+                        # ----------------------------------------
+                        echo "Waiting for AWS Load Balancers to disappear..."
+
+                        sleep 60
+
+                        # ----------------------------------------
+                        # 5. Delete Kubernetes namespace
+                        # ----------------------------------------
+                        echo "Deleting Kubernetes namespace..."
+
+                        kubectl delete namespace mini \
+                            --ignore-not-found=true || true
+
+                        # ----------------------------------------
+                        # 6. Empty versioned S3 bucket
+                        # ----------------------------------------
+                        echo "========================================"
+                        echo "Emptying S3 bucket"
+                        echo "========================================"
+
+                        BUCKET="mini-amazon-product-images"
+
+                        if aws s3api head-bucket \
+                            --bucket "$BUCKET" \
+                            --region ap-south-2 2>/dev/null
+                        then
+
+                            while true
+                            do
+
+                                VERSIONS=$(aws s3api list-object-versions \
+                                    --bucket "$BUCKET" \
+                                    --region ap-south-2 \
+                                    --output json)
+
+                                DELETE_JSON=$(echo "$VERSIONS" | python3 -c '
 import sys
 import json
 
@@ -285,49 +298,55 @@ print(json.dumps({
 }))
 ')
 
-                        COUNT=$(echo "$DELETE_JSON" | python3 -c '
+                                COUNT=$(echo "$DELETE_JSON" | python3 -c '
 import sys
 import json
+
 d = json.load(sys.stdin)
+
 print(len(d.get("Objects", [])))
 ')
 
-                        if [ "$COUNT" -eq 0 ]; then
-                            break
+                                if [ "$COUNT" -eq 0 ]; then
+                                    break
+                                fi
+
+                                echo "Deleting $COUNT S3 object versions/delete markers..."
+
+                                echo "$DELETE_JSON" > /tmp/s3-delete.json
+
+                                aws s3api delete-objects \
+                                    --bucket "$BUCKET" \
+                                    --region ap-south-2 \
+                                    --delete file:///tmp/s3-delete.json
+
+                            done
+
+                            echo "S3 bucket is empty."
+
+                        else
+
+                            echo "S3 bucket does not exist. Skipping."
+
                         fi
 
-                        echo "Deleting $COUNT S3 object versions/delete markers..."
+                        # ----------------------------------------
+                        # 7. Terraform Destroy
+                        # ----------------------------------------
+                        echo "========================================"
+                        echo "Destroying Terraform infrastructure"
+                        echo "========================================"
 
-                        echo "$DELETE_JSON" > /tmp/s3-delete.json
+                        cd terraform
 
-                        aws s3api delete-objects \
-                            --bucket "$BUCKET" \
-                            --region ap-south-2 \
-                            --delete file:///tmp/s3-delete.json
-                    done
+                        terraform destroy -auto-approve
 
-                    echo "S3 bucket is empty."
-
-                else
-                    echo "S3 bucket does not exist. Skipping."
-                fi
-
-                # ----------------------------------------
-                # 7. Terraform Destroy
-                # ----------------------------------------
-                echo "========================================"
-                echo "Destroying Terraform infrastructure"
-                echo "========================================"
-
-                cd terraform
-
-                terraform destroy -auto-approve
-
-                echo "========================================"
-                echo "Terraform destroy completed"
-                echo "========================================"
-            '''
+                        echo "========================================"
+                        echo "Terraform destroy completed"
+                        echo "========================================"
+                    '''
+                }
+            }
         }
     }
 }
-    }
