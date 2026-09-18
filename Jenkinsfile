@@ -148,6 +148,11 @@ stage('Terraform Plan') {
         }
 
         stage('Push Docker Images') {
+            when {
+        expression {
+            !params.ROLLBACK_BUILD?.trim()
+        }
+    }
             steps {
                 withCredentials([
                     usernamePassword(
