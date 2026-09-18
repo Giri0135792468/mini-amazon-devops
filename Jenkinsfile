@@ -7,6 +7,11 @@ pipeline {
             defaultValue: false,
             description: 'Destroy all Terraform infrastructure'
         )
+        string(
+        name: 'ROLLBACK_BUILD',
+        defaultValue: '',
+        description: 'Jenkins build number to rollback to'
+    )
     }
 
     environment {
@@ -111,6 +116,11 @@ stage('Terraform Plan') {
         }
 
         stage('Build Docker Images') {
+            when {
+        expression {
+            !params.ROLLBACK_BUILD?.trim()
+        }
+    }
             steps {
                 sh '''
                     docker build -t girijos/mini-amazon-user-service:${IMAGE_TAG} ./services/user-service
@@ -120,6 +130,19 @@ stage('Terraform Plan') {
                     docker build -t girijos/mini-amazon-payment-service:${IMAGE_TAG} ./services/payment-service
                     docker build -t girijos/mini-amazon-notification-service:${IMAGE_TAG} ./services/notification-service
                     docker build -t girijos/mini-amazon-frontend:${IMAGE_TAG} ./frontend
+                     echo "========================================"
+            echo "Docker Images Built"
+            echo "========================================"
+
+            echo "girijos/mini-amazon-user-service:${IMAGE_TAG}"
+            echo "girijos/mini-amazon-product-service:${IMAGE_TAG}"
+            echo "girijos/mini-amazon-cart-service:${IMAGE_TAG}"
+            echo "girijos/mini-amazon-order-service:${IMAGE_TAG}"
+            echo "girijos/mini-amazon-payment-service:${IMAGE_TAG}"
+            echo "girijos/mini-amazon-notification-service:${IMAGE_TAG}"
+            echo "girijos/mini-amazon-frontend:${IMAGE_TAG}"
+
+            echo "========================================"
                 '''
             }
         }
