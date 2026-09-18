@@ -5,18 +5,23 @@ resource "kubernetes_namespace" "mini" {
 }
 
 resource "kubernetes_config_map" "aws_config" {
+  depends_on = [kubernetes_namespace.mini]
+
   metadata {
     name      = "aws-config"
     namespace = var.namespace
   }
-data = {
-  AWS_REGION     = "ap-south-2"
-  DYNAMODB_TABLE = var.dynamodb_table_name
-  S3_BUCKET      = var.s3_bucket_name
-}
+
+  data = {
+    AWS_REGION     = "ap-south-2"
+    DYNAMODB_TABLE = var.dynamodb_table_name
+    S3_BUCKET      = var.s3_bucket_name
+  }
 }
 
 resource "kubernetes_config_map" "database_config" {
+  depends_on = [kubernetes_namespace.mini]
+
   metadata {
     name      = "database-config"
     namespace = var.namespace
@@ -31,6 +36,8 @@ resource "kubernetes_config_map" "database_config" {
 }
 
 resource "kubernetes_secret" "database" {
+  depends_on = [kubernetes_namespace.mini]
+
   metadata {
     name      = "database-secret"
     namespace = var.namespace
@@ -44,6 +51,8 @@ resource "kubernetes_secret" "database" {
 }
 
 resource "kubernetes_service_account" "product_service" {
+  depends_on = [kubernetes_namespace.mini]
+
   metadata {
     name      = "product-service-sa"
     namespace = var.namespace
@@ -54,8 +63,9 @@ resource "kubernetes_service_account" "product_service" {
   }
 }
 
-
 resource "kubernetes_secret" "application" {
+  depends_on = [kubernetes_namespace.mini]
+
   metadata {
     name      = "application-secret"
     namespace = var.namespace
@@ -64,7 +74,7 @@ resource "kubernetes_secret" "application" {
   type = "Opaque"
 
   data = {
-    JWT_SECRET = var.jwt_secret
+    JWT_SECRET       = var.jwt_secret
     FLASK_SECRET_KEY = var.flask_secret_key
   }
 }
