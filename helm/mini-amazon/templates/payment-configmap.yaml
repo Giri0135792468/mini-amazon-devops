@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: payment-config
+  namespace: {{ .Values.namespace }}
+
+data:
+  NOTIFICATION_SERVICE_URL: http://notification-service:5006

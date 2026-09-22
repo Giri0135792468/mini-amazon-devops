@@ -1,0 +1,30 @@
+namespace: mini
+
+images:
+  user:
+    repository: girijos/mini-amazon-user-service
+    tag: "1.0"
+
+  product:
+    repository: girijos/mini-amazon-product-service
+    tag: "1.0"
+
+  cart:
+    repository: girijos/mini-amazon-cart-service
+    tag: "1.0"
+
+  order:
+    repository: girijos/mini-amazon-order-service
+    tag: "1.0"
+
+  payment:
+    repository: girijos/mini-amazon-payment-service
+    tag: "1.0"
+
+  notification:
+    repository: girijos/mini-amazon-notification-service
+    tag: "1.0"
+
+  frontend:
+    repository: girijos/mini-amazon-frontend
+    tag: "1.0"

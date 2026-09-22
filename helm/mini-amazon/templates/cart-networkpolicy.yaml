@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: cart-network-policy
+  namespace: {{ .Values.namespace }}
+
+spec:
+  podSelector:
+    matchLabels:
+      app: cart
+
+  policyTypes:
+    - Ingress
+
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: frontend
+
+      ports:
+        - protocol: TCP
+          port: 5002
