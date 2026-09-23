@@ -1,3 +1,4 @@
+```groovy
 pipeline {
     agent any
 
@@ -244,6 +245,52 @@ pipeline {
         }
 
         // ============================================================
+        // TRIVY SECURITY SCAN
+        // ============================================================
+
+        stage('Trivy Security Scan') {
+            when {
+                expression {
+                    !params.DESTROY_INFRA &&
+                    !params.ROLLBACK_BUILD?.trim()
+                }
+            }
+
+            steps {
+                sh '''
+                    echo "========================================"
+                    echo "Trivy Security Scan"
+                    echo "========================================"
+
+                    for image in \
+                        girijos/mini-amazon-user-service:${IMAGE_TAG} \
+                        girijos/mini-amazon-product-service:${IMAGE_TAG} \
+                        girijos/mini-amazon-cart-service:${IMAGE_TAG} \
+                        girijos/mini-amazon-order-service:${IMAGE_TAG} \
+                        girijos/mini-amazon-payment-service:${IMAGE_TAG} \
+                        girijos/mini-amazon-notification-service:${IMAGE_TAG} \
+                        girijos/mini-amazon-frontend:${IMAGE_TAG}
+                    do
+                        echo "========================================"
+                        echo "Scanning: $image"
+                        echo "========================================"
+
+                        trivy image \
+                            --scanners vuln \
+                            --severity HIGH,CRITICAL \
+                            "$image" || true
+                    done
+
+                    echo "========================================"
+                    echo "Trivy scan completed"
+                    echo "Security findings are currently informational."
+                    echo "Pipeline will continue regardless of vulnerabilities."
+                    echo "========================================"
+                '''
+            }
+        }
+
+        // ============================================================
         // EKS ACCESS
         // ============================================================
 
@@ -298,12 +345,14 @@ pipeline {
                 sh '''
                     if [ -n "${ROLLBACK_BUILD}" ]; then
                         DEPLOY_TAG="${ROLLBACK_BUILD}"
+
                         echo "========================================"
                         echo "ROLLBACK DEPLOYMENT"
                         echo "Deploying build: ${DEPLOY_TAG}"
                         echo "========================================"
                     else
                         DEPLOY_TAG="${IMAGE_TAG}"
+
                         echo "========================================"
                         echo "NORMAL DEPLOYMENT"
                         echo "Deploying build: ${DEPLOY_TAG}"
@@ -561,3 +610,4 @@ print(len(d.get("Objects", [])))
         }
     }
 }
+```
