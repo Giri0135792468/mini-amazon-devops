@@ -603,7 +603,7 @@ pipeline {
                                 # Only process non-requester-managed ENIs.
                                 if [ "$REQUESTER_MANAGED" = "False" ]; then
 
-                                    INSTANCE_ID=$(echo "$ENI_DESCRIPTION" | sed -n 's/.*\(i-[a-zA-Z0-9]*\).*/\1/p')
+                                    INSTANCE_ID=$(echo "$ENI_DESCRIPTION" | grep -o 'i-[a-zA-Z0-9]*' | head -1)
 
                                     if [ -n "$INSTANCE_ID" ]; then
 
