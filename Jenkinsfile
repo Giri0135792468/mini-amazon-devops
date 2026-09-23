@@ -1,4 +1,3 @@
-
 pipeline {
     agent any
 
@@ -130,6 +129,42 @@ pipeline {
                 sh '''
                     python3 -m compileall frontend services
                 '''
+            }
+        }
+
+        // ============================================================
+        // SONARQUBE CODE ANALYSIS
+        // ============================================================
+
+        stage('SonarQube Analysis') {
+            when {
+                expression {
+                    !params.DESTROY_INFRA &&
+                    !params.ROLLBACK_BUILD?.trim()
+                }
+            }
+
+            steps {
+                script {
+                    try {
+                        def scannerHome = tool 'SonarScanner'
+
+                        withSonarQubeEnv('SonarQube') {
+                            sh "${scannerHome}/bin/sonar-scanner"
+                        }
+
+                        echo "========================================"
+                        echo "SonarQube analysis completed"
+                        echo "Pipeline will continue regardless of SonarQube findings."
+                        echo "========================================"
+                    } catch (Exception e) {
+                        echo "========================================"
+                        echo "SonarQube analysis failed"
+                        echo "Reason: ${e.getMessage()}"
+                        echo "Continuing pipeline without blocking deployment."
+                        echo "========================================"
+                    }
+                }
             }
         }
 
@@ -610,4 +645,3 @@ print(len(d.get("Objects", [])))
         }
     }
 }
-
