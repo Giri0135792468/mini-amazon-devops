@@ -21,6 +21,10 @@ pipeline {
 
     stages {
 
+        // ============================================================
+        // CHECKOUT
+        // ============================================================
+
         stage('Checkout') {
             steps {
                 checkout scm
@@ -157,7 +161,9 @@ pipeline {
                         echo "SonarQube analysis completed"
                         echo "Pipeline will continue regardless of SonarQube findings."
                         echo "========================================"
+
                     } catch (Exception e) {
+
                         echo "========================================"
                         echo "SonarQube analysis failed"
                         echo "Reason: ${e.getMessage()}"
@@ -385,6 +391,7 @@ pipeline {
                         echo "ROLLBACK DEPLOYMENT"
                         echo "Deploying build: ${DEPLOY_TAG}"
                         echo "========================================"
+
                     else
                         DEPLOY_TAG="${IMAGE_TAG}"
 
@@ -494,6 +501,7 @@ pipeline {
                             --region ap-south-2 \
                             --name mini-amazon-eks || true
 
+
                         # ----------------------------------------
                         # 2. Remove Helm release
                         # ----------------------------------------
@@ -502,6 +510,7 @@ pipeline {
 
                         helm uninstall mini-amazon \
                             --namespace mini || true
+
 
                         # ----------------------------------------
                         # 3. Remove Kubernetes Ingress
@@ -513,6 +522,7 @@ pipeline {
                             --all \
                             -n mini \
                             --ignore-not-found=true || true
+
 
                         # ----------------------------------------
                         # 4. Remove LoadBalancer Services
@@ -526,6 +536,7 @@ pipeline {
                             -o name 2>/dev/null | \
                             xargs -r kubectl delete -n mini || true
 
+
                         # ----------------------------------------
                         # 5. Wait for AWS Load Balancers
                         # ----------------------------------------
@@ -533,6 +544,7 @@ pipeline {
                         echo "Waiting for AWS Load Balancers to disappear..."
 
                         sleep 60
+
 
                         # ----------------------------------------
                         # 6. Delete Kubernetes namespace
@@ -543,8 +555,130 @@ pipeline {
                         kubectl delete namespace mini \
                             --ignore-not-found=true || true
 
+
                         # ----------------------------------------
-                        # 7. Empty versioned S3 bucket
+                        # 7. Wait for Kubernetes namespace
+                        # ----------------------------------------
+
+                        echo "Waiting for Kubernetes namespace to terminate..."
+
+                        for i in $(seq 1 30)
+                        do
+                            if ! kubectl get namespace mini >/dev/null 2>&1; then
+                                echo "Namespace mini has been deleted."
+                                break
+                            fi
+
+                            echo "Namespace still exists. Waiting..."
+                            sleep 10
+                        done
+
+
+                        # ----------------------------------------
+                        # 8. Clean up orphaned Kubernetes ENIs
+                        # ----------------------------------------
+
+                        echo "========================================"
+                        echo "Checking for orphaned Kubernetes ENIs"
+                        echo "========================================"
+
+                        ENI_DATA=$(aws ec2 describe-network-interfaces \
+                            --region ap-south-2 \
+                            --filters \
+                                Name=status,Values=available \
+                            --query 'NetworkInterfaces[?starts_with(Description, `aws-K8S-`)].[NetworkInterfaceId,Description,RequesterManaged]' \
+                            --output text)
+
+                        if [ -n "$ENI_DATA" ]; then
+
+                            echo "$ENI_DATA" | while read -r ENI_ID ENI_DESCRIPTION REQUESTER_MANAGED
+                            do
+
+                                echo "----------------------------------------"
+                                echo "Checking ENI: $ENI_ID"
+                                echo "Description: $ENI_DESCRIPTION"
+                                echo "RequesterManaged: $REQUESTER_MANAGED"
+                                echo "----------------------------------------"
+
+                                # Only process non-requester-managed ENIs.
+                                if [ "$REQUESTER_MANAGED" = "False" ]; then
+
+                                    INSTANCE_ID=$(echo "$ENI_DESCRIPTION" | sed -n 's/.*\(i-[a-zA-Z0-9]*\).*/\1/p')
+
+                                    if [ -n "$INSTANCE_ID" ]; then
+
+                                        INSTANCE_STATE=$(aws ec2 describe-instances \
+                                            --instance-ids "$INSTANCE_ID" \
+                                            --region ap-south-2 \
+                                            --query 'Reservations[0].Instances[0].State.Name' \
+                                            --output text 2>/dev/null || echo "not-found")
+
+                                        echo "Associated instance: $INSTANCE_ID"
+                                        echo "Instance state: $INSTANCE_STATE"
+
+                                        if [ "$INSTANCE_STATE" = "terminated" ] || [ "$INSTANCE_STATE" = "not-found" ]; then
+
+                                            echo "Deleting orphaned Kubernetes ENI: $ENI_ID"
+
+                                            aws ec2 delete-network-interface \
+                                                --network-interface-id "$ENI_ID" \
+                                                --region ap-south-2
+
+                                            echo "Deleted ENI: $ENI_ID"
+
+                                        else
+
+                                            echo "Instance is still active. Skipping ENI: $ENI_ID"
+
+                                        fi
+
+                                    else
+
+                                        echo "Could not determine EC2 instance from ENI description."
+                                        echo "Skipping ENI: $ENI_ID"
+
+                                    fi
+
+                                else
+
+                                    echo "ENI is requester-managed. Skipping: $ENI_ID"
+
+                                fi
+
+                            done
+
+                        else
+
+                            echo "No orphaned Kubernetes ENIs found."
+
+                        fi
+
+
+                        # ----------------------------------------
+                        # 9. Verify orphaned Kubernetes ENIs
+                        # ----------------------------------------
+
+                        echo "========================================"
+                        echo "Verifying Kubernetes ENI cleanup"
+                        echo "========================================"
+
+                        REMAINING_ENIS=$(aws ec2 describe-network-interfaces \
+                            --region ap-south-2 \
+                            --filters \
+                                Name=status,Values=available \
+                            --query 'NetworkInterfaces[?starts_with(Description, `aws-K8S-`)].NetworkInterfaceId' \
+                            --output text)
+
+                        if [ -n "$REMAINING_ENIS" ]; then
+                            echo "Remaining available Kubernetes ENIs:"
+                            echo "$REMAINING_ENIS"
+                        else
+                            echo "No available Kubernetes ENIs remain."
+                        fi
+
+
+                        # ----------------------------------------
+                        # 10. Empty versioned S3 bucket
                         # ----------------------------------------
 
                         echo "========================================"
@@ -624,8 +758,9 @@ print(len(d.get("Objects", [])))
 
                         fi
 
+
                         # ----------------------------------------
-                        # 8. Terraform Destroy
+                        # 11. Terraform Destroy
                         # ----------------------------------------
 
                         echo "========================================"
@@ -639,6 +774,7 @@ print(len(d.get("Objects", [])))
                         echo "========================================"
                         echo "Terraform destroy completed"
                         echo "========================================"
+
                     '''
                 }
             }
