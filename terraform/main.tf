@@ -130,4 +130,4 @@ resource "helm_release" "argocd" {
     kubernetes_namespace.argocd,
     module.alb_controller
   ]
-}}
+}
