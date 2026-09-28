@@ -32,13 +32,88 @@ pipeline {
         }
 
         // ============================================================
-        // TERRAFORM INIT
+        // TERRAFORM
         // ============================================================
 
         stage('Terraform Init') {
             steps {
                 dir('terraform') {
                     sh 'terraform init'
+                }
+            }
+        }
+
+        stage('Terraform AWS Bootstrap') {
+            steps {
+                withCredentials([
+                    string(
+                        credentialsId: 'db-password',
+                        variable: 'TF_VAR_db_password'
+                    ),
+                    string(
+                        credentialsId: 'jwt-secret',
+                        variable: 'TF_VAR_jwt_secret'
+                    ),
+                    string(
+                        credentialsId: 'flask-secret-key',
+                        variable: 'TF_VAR_flask_secret_key'
+                    )
+                ]) {
+                    dir('terraform') {
+                        sh '''
+                            terraform apply \
+                                -target=module.vpc \
+                                -target=module.eks \
+                                -target=module.iam \
+                                -auto-approve
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Terraform Plan') {
+            steps {
+                withCredentials([
+                    string(
+                        credentialsId: 'db-password',
+                        variable: 'TF_VAR_db_password'
+                    ),
+                    string(
+                        credentialsId: 'jwt-secret',
+                        variable: 'TF_VAR_jwt_secret'
+                    ),
+                    string(
+                        credentialsId: 'flask-secret-key',
+                        variable: 'TF_VAR_flask_secret_key'
+                    )
+                ]) {
+                    dir('terraform') {
+                        sh 'terraform plan'
+                    }
+                }
+            }
+        }
+
+        stage('Terraform Apply') {
+            steps {
+                withCredentials([
+                    string(
+                        credentialsId: 'db-password',
+                        variable: 'TF_VAR_db_password'
+                    ),
+                    string(
+                        credentialsId: 'jwt-secret',
+                        variable: 'TF_VAR_jwt_secret'
+                    ),
+                    string(
+                        credentialsId: 'flask-secret-key',
+                        variable: 'TF_VAR_flask_secret_key'
+                    )
+                ]) {
+                    dir('terraform') {
+                        sh 'terraform apply -auto-approve'
+                    }
                 }
             }
         }
@@ -50,8 +125,7 @@ pipeline {
         stage('Test') {
             when {
                 expression {
-                    !params.DESTROY_INFRA &&
-                    !params.ROLLBACK_BUILD?.trim()
+                    !params.DESTROY_INFRA
                 }
             }
 
@@ -258,240 +332,6 @@ pipeline {
         }
 
         // ============================================================
-        // UPDATE GITOPS VALUES
-        // ============================================================
-
-        stage('Update GitOps Values') {
-            when {
-                expression {
-                    !params.DESTROY_INFRA
-                }
-            }
-
-            steps {
-                script {
-                    withCredentials([
-                        usernamePassword(
-                            credentialsId: 'github-credentials',
-                            usernameVariable: 'GIT_USERNAME',
-                            passwordVariable: 'GIT_PASSWORD'
-                        )
-                    ]) {
-                        sh '''
-                            set -e
-
-                            VALUES_FILE="helm/mini-amazon/values.yaml"
-
-                            if [ -n "${ROLLBACK_BUILD}" ]; then
-                                DEPLOY_TAG="${ROLLBACK_BUILD}"
-
-                                echo "========================================"
-                                echo "GITOPS ROLLBACK"
-                                echo "Updating Git desired state to build: ${DEPLOY_TAG}"
-                                echo "========================================"
-                            else
-                                DEPLOY_TAG="${IMAGE_TAG}"
-
-                                echo "========================================"
-                                echo "GITOPS DEPLOYMENT"
-                                echo "Updating Git desired state to build: ${DEPLOY_TAG}"
-                                echo "========================================"
-                            fi
-
-                            python3 - "$VALUES_FILE" "$DEPLOY_TAG" <<'PY'
-import sys
-
-values_file = sys.argv[1]
-deploy_tag = sys.argv[2]
-
-services = [
-    "user",
-    "product",
-    "cart",
-    "order",
-    "payment",
-    "notification",
-    "frontend"
-]
-
-with open(values_file, "r") as f:
-    lines = f.readlines()
-
-current_service = None
-updated = []
-
-for line in lines:
-
-    stripped = line.strip()
-
-    if stripped.endswith(":") and not stripped.startswith("tag:"):
-        service_name = stripped[:-1]
-
-        if service_name in services:
-            current_service = service_name
-
-    if current_service and stripped.startswith("tag:"):
-        indent = line[:len(line) - len(line.lstrip())]
-
-        line = f'{indent}tag: "{deploy_tag}"\n'
-
-        current_service = None
-
-    updated.append(line)
-
-with open(values_file, "w") as f:
-    f.writelines(updated)
-PY
-
-                            echo "========================================"
-                            echo "Git diff"
-                            echo "========================================"
-
-                            git diff -- "$VALUES_FILE"
-
-                            git config user.name "Jenkins"
-                            git config user.email "jenkins@local"
-
-                            git add "$VALUES_FILE"
-
-                            if git diff --cached --quiet; then
-                                echo "No GitOps changes to commit."
-                                exit 0
-                            fi
-
-                            git commit \
-                                -m "chore: update image tags to ${DEPLOY_TAG} [skip ci]"
-
-                            ORIGIN_URL=$(git remote get-url origin)
-
-                            if echo "$ORIGIN_URL" | grep -q '^git@github.com:'; then
-                                REPO_PATH=$(echo "$ORIGIN_URL" \
-                                    | sed 's#^git@github.com:##')
-                            else
-                                REPO_PATH=$(echo "$ORIGIN_URL" \
-                                    | sed -E 's#https?://[^/]+/##; s#\\.git$##')
-                            fi
-
-                            git push \
-                                "https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/${REPO_PATH}.git" \
-                                HEAD:main
-
-                            echo "========================================"
-                            echo "GitOps update pushed successfully"
-                            echo "Deployment tag: ${DEPLOY_TAG}"
-                            echo "========================================"
-                        '''
-                    }
-                }
-            }
-        }
-
-        // ============================================================
-        // TERRAFORM AWS BOOTSTRAP
-        // ============================================================
-
-        stage('Terraform AWS Bootstrap') {
-            when {
-                expression {
-                    !params.DESTROY_INFRA
-                }
-            }
-
-            steps {
-                withCredentials([
-                    string(
-                        credentialsId: 'db-password',
-                        variable: 'TF_VAR_db_password'
-                    ),
-                    string(
-                        credentialsId: 'jwt-secret',
-                        variable: 'TF_VAR_jwt_secret'
-                    ),
-                    string(
-                        credentialsId: 'flask-secret-key',
-                        variable: 'TF_VAR_flask_secret_key'
-                    )
-                ]) {
-                    dir('terraform') {
-                        sh '''
-                            terraform apply \
-                                -target=module.vpc \
-                                -target=module.eks \
-                                -target=module.iam \
-                                -auto-approve
-                        '''
-                    }
-                }
-            }
-        }
-
-        // ============================================================
-        // TERRAFORM PLAN
-        // ============================================================
-
-        stage('Terraform Plan') {
-            when {
-                expression {
-                    !params.DESTROY_INFRA
-                }
-            }
-
-            steps {
-                withCredentials([
-                    string(
-                        credentialsId: 'db-password',
-                        variable: 'TF_VAR_db_password'
-                    ),
-                    string(
-                        credentialsId: 'jwt-secret',
-                        variable: 'TF_VAR_jwt_secret'
-                    ),
-                    string(
-                        credentialsId: 'flask-secret-key',
-                        variable: 'TF_VAR_flask_secret_key'
-                    )
-                ]) {
-                    dir('terraform') {
-                        sh 'terraform plan'
-                    }
-                }
-            }
-        }
-
-        // ============================================================
-        // TERRAFORM APPLY
-        // ============================================================
-
-        stage('Terraform Apply') {
-            when {
-                expression {
-                    !params.DESTROY_INFRA
-                }
-            }
-
-            steps {
-                withCredentials([
-                    string(
-                        credentialsId: 'db-password',
-                        variable: 'TF_VAR_db_password'
-                    ),
-                    string(
-                        credentialsId: 'jwt-secret',
-                        variable: 'TF_VAR_jwt_secret'
-                    ),
-                    string(
-                        credentialsId: 'flask-secret-key',
-                        variable: 'TF_VAR_flask_secret_key'
-                    )
-                ]) {
-                    dir('terraform') {
-                        sh 'terraform apply -auto-approve'
-                    }
-                }
-            }
-        }
-
-        // ============================================================
         // EKS ACCESS
         // ============================================================
 
@@ -532,88 +372,89 @@ PY
         }
 
         // ============================================================
+        // HELM DEPLOYMENT
+        // ============================================================
+
+        stage('Deploy to EKS') {
+            when {
+                expression {
+                    !params.DESTROY_INFRA
+                }
+            }
+
+            steps {
+                sh '''
+                    if [ -n "${ROLLBACK_BUILD}" ]; then
+                        DEPLOY_TAG="${ROLLBACK_BUILD}"
+
+                        echo "========================================"
+                        echo "ROLLBACK DEPLOYMENT"
+                        echo "Deploying build: ${DEPLOY_TAG}"
+                        echo "========================================"
+
+                    else
+                        DEPLOY_TAG="${IMAGE_TAG}"
+
+                        echo "========================================"
+                        echo "NORMAL DEPLOYMENT"
+                        echo "Deploying build: ${DEPLOY_TAG}"
+                        echo "========================================"
+                    fi
+
+                    helm upgrade --install mini-amazon ./helm/mini-amazon \
+                        --namespace mini \
+                        --create-namespace \
+                        --set images.user.tag=${DEPLOY_TAG} \
+                        --set images.product.tag=${DEPLOY_TAG} \
+                        --set images.cart.tag=${DEPLOY_TAG} \
+                        --set images.order.tag=${DEPLOY_TAG} \
+                        --set images.payment.tag=${DEPLOY_TAG} \
+                        --set images.notification.tag=${DEPLOY_TAG} \
+                        --set images.frontend.tag=${DEPLOY_TAG}
+                '''
+            }
+        }
+
+        // ============================================================
         // VERIFY
         // ============================================================
 
-// ============================================================
-// VERIFY ARGO CD DEPLOYMENT
-// ============================================================
+        stage('Verify Deployment') {
+            when {
+                expression {
+                    !params.DESTROY_INFRA
+                }
+            }
 
-stage('Verify Deployment') {
-    when {
-        expression {
-            !params.DESTROY_INFRA
+            steps {
+                sh '''
+                    echo "========================================"
+                    echo "Pods"
+                    echo "========================================"
+
+                    kubectl get pods -n mini
+
+                    echo "========================================"
+                    echo "Services"
+                    echo "========================================"
+
+                    kubectl get services -n mini
+
+                    echo "========================================"
+                    echo "Ingress"
+                    echo "========================================"
+
+                    kubectl get ingress -n mini
+
+                    echo "========================================"
+                    echo "Helm Release"
+                    echo "========================================"
+
+                    helm list -n mini
+                '''
+            }
         }
-    }
 
-    steps {
-        sh '''
-            set -e
-
-            echo "========================================"
-            echo "Waiting for Argo CD Application"
-            echo "========================================"
-
-            for i in $(seq 1 30)
-            do
-                if kubectl get application mini-amazon \
-                    -n argocd >/dev/null 2>&1
-                then
-                    echo "Argo CD Application found."
-                    break
-                fi
-
-                echo "Waiting for Argo CD Application..."
-                sleep 10
-            done
-
-            echo "========================================"
-            echo "Argo CD Application"
-            echo "========================================"
-
-            kubectl get application mini-amazon -n argocd
-
-            echo "========================================"
-            echo "Waiting for Mini Amazon Pods"
-            echo "========================================"
-
-            kubectl wait \
-                --for=condition=Available \
-                deployment \
-                --all \
-                -n mini \
-                --timeout=10m
-
-            echo "========================================"
-            echo "Pods"
-            echo "========================================"
-
-            kubectl get pods -n mini
-
-            echo "========================================"
-            echo "Services"
-            echo "========================================"
-
-            kubectl get services -n mini
-
-            echo "========================================"
-            echo "Ingress"
-            echo "========================================"
-
-            kubectl get ingress -n mini
-
-            echo "========================================"
-            echo "Helm Release"
-            echo "========================================"
-
-            helm list -n mini
-
-            echo "========================================"
-            echo "Deployment verification completed"
-            echo "========================================"
-        '''
-    }
-}
         // ============================================================
         // DESTROY INFRASTRUCTURE
         // ============================================================
@@ -662,20 +503,7 @@ stage('Verify Deployment') {
 
 
                         # ----------------------------------------
-                        # 2. Remove Argo CD Application
-                        # ----------------------------------------
-
-                        echo "Removing Argo CD Application..."
-
-                        kubectl delete application mini-amazon \
-                            -n argocd \
-                            --ignore-not-found=true || true
-
-                        sleep 30
-
-
-                        # ----------------------------------------
-                        # 3. Remove Helm release
+                        # 2. Remove Helm release
                         # ----------------------------------------
 
                         echo "Removing Helm release..."
@@ -685,7 +513,7 @@ stage('Verify Deployment') {
 
 
                         # ----------------------------------------
-                        # 4. Remove Kubernetes Ingress
+                        # 3. Remove Kubernetes Ingress
                         # ----------------------------------------
 
                         echo "Removing Kubernetes ingress..."
@@ -697,7 +525,7 @@ stage('Verify Deployment') {
 
 
                         # ----------------------------------------
-                        # 5. Remove LoadBalancer Services
+                        # 4. Remove LoadBalancer Services
                         # ----------------------------------------
 
                         echo "Removing Kubernetes LoadBalancer services..."
@@ -710,7 +538,7 @@ stage('Verify Deployment') {
 
 
                         # ----------------------------------------
-                        # 6. Wait for AWS Load Balancers
+                        # 5. Wait for AWS Load Balancers
                         # ----------------------------------------
 
                         echo "Waiting for AWS Load Balancers to disappear..."
@@ -719,7 +547,7 @@ stage('Verify Deployment') {
 
 
                         # ----------------------------------------
-                        # 7. Delete Kubernetes namespace
+                        # 6. Delete Kubernetes namespace
                         # ----------------------------------------
 
                         echo "Deleting Kubernetes namespace..."
@@ -729,7 +557,7 @@ stage('Verify Deployment') {
 
 
                         # ----------------------------------------
-                        # 8. Wait for Kubernetes namespace
+                        # 7. Wait for Kubernetes namespace
                         # ----------------------------------------
 
                         echo "Waiting for Kubernetes namespace to terminate..."
@@ -747,7 +575,7 @@ stage('Verify Deployment') {
 
 
                         # ----------------------------------------
-                        # 9. Clean up orphaned Kubernetes ENIs
+                        # 8. Clean up orphaned Kubernetes ENIs
                         # ----------------------------------------
 
                         echo "========================================"
@@ -772,6 +600,7 @@ stage('Verify Deployment') {
                                 echo "RequesterManaged: $REQUESTER_MANAGED"
                                 echo "----------------------------------------"
 
+                                # Only process non-requester-managed ENIs.
                                 if [ "$REQUESTER_MANAGED" = "False" ]; then
 
                                     INSTANCE_ID=$(echo "$ENI_DESCRIPTION" | grep -o 'i-[a-zA-Z0-9]*' | head -1)
@@ -826,7 +655,7 @@ stage('Verify Deployment') {
 
 
                         # ----------------------------------------
-                        # 10. Verify orphaned Kubernetes ENIs
+                        # 9. Verify orphaned Kubernetes ENIs
                         # ----------------------------------------
 
                         echo "========================================"
@@ -849,7 +678,7 @@ stage('Verify Deployment') {
 
 
                         # ----------------------------------------
-                        # 11. Empty versioned S3 bucket
+                        # 10. Empty versioned S3 bucket
                         # ----------------------------------------
 
                         echo "========================================"
@@ -931,7 +760,7 @@ print(len(d.get("Objects", [])))
 
 
                         # ----------------------------------------
-                        # 12. Terraform Destroy
+                        # 11. Terraform Destroy
                         # ----------------------------------------
 
                         echo "========================================"

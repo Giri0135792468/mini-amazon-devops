@@ -103,5 +103,86 @@ module "iam" {
  }
 
 
+# ============================================================
+# ARGO CD
+# ============================================================
+
+resource "kubernetes_namespace" "argocd" {
+  metadata {
+    name = "argocd"
+  }
+
+  depends_on = [
+    module.eks
+  ]
+}
 
 
+resource "helm_release" "argocd" {
+  name       = "argocd"
+  namespace  = kubernetes_namespace.argocd.metadata[0].name
+
+  repository = "https://argoproj.github.io/argo-helm"
+  chart      = "argo-cd"
+
+  create_namespace = false
+
+  depends_on = [
+    kubernetes_namespace.argocd
+  ]
+}
+
+# ============================================================
+# ARGO CD APPLICATION
+# ============================================================
+
+resource "kubernetes_manifest" "mini_amazon_argocd_application" {
+
+  manifest = {
+    apiVersion = "argoproj.io/v1alpha1"
+    kind       = "Application"
+
+    metadata = {
+      name      = "mini-amazon"
+      namespace = "argocd"
+    }
+
+    spec = {
+
+      project = "default"
+
+      source = {
+        repoURL        = "https://github.com/Giri0135792468/mini-amazon-devops.git"
+        targetRevision = "main"
+        path           = "helm/mini-amazon"
+
+        helm = {
+          valueFiles = [
+            "values.yaml"
+          ]
+        }
+      }
+
+      destination = {
+        server    = "https://kubernetes.default.svc"
+        namespace = "mini"
+      }
+
+      syncPolicy = {
+        automated = {
+          prune    = true
+          selfHeal = true
+        }
+
+        syncOptions = [
+          "CreateNamespace=true"
+        ]
+      }
+    }
+
+  }
+
+  depends_on = [
+    helm_release.argocd
+  ]
+}
