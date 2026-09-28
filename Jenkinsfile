@@ -513,6 +513,64 @@ PY
             }
         }
 
+
+// ============================================================
+// CREATE ARGO CD APPLICATION
+// ============================================================
+
+stage('Create Argo CD Application') {
+    when {
+        expression {
+            !params.DESTROY_INFRA
+        }
+    }
+
+    steps {
+        sh '''
+            set -e
+
+            echo "========================================"
+            echo "Creating Argo CD Application"
+            echo "========================================"
+
+            cat <<'EOF' | kubectl apply -f -
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mini-amazon
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/Giri0135792468/mini-amazon-devops.git
+    targetRevision: main
+    path: helm/mini-amazon
+    helm:
+      valueFiles:
+        - values.yaml
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: mini
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+
+    syncOptions:
+      - CreateNamespace=true
+EOF
+
+            echo "========================================"
+            echo "Argo CD Application created"
+            echo "========================================"
+
+            kubectl get application mini-amazon -n argocd
+        '''
+    }
+}
         // ============================================================
         // HELM VALIDATION
         // ============================================================
