@@ -84,7 +84,32 @@ module "iam" {
    depends_on = [module.eks]
  }
 
+resource "null_resource" "wait_for_alb_controller" {
+  depends_on = [module.alb_controller]
 
+  provisioner "local-exec" {
+    command = <<-EOT
+      echo "Waiting for AWS Load Balancer Controller webhook..."
+
+      for i in $(seq 1 60); do
+        ENDPOINTS=$(kubectl get endpoints aws-load-balancer-webhook-service \
+          -n kube-system \
+          -o jsonpath='{.subsets[*].addresses[*].ip}' 2>/dev/null || true)
+
+        if [ -n "$ENDPOINTS" ]; then
+          echo "ALB webhook is ready: $ENDPOINTS"
+          exit 0
+        fi
+
+        echo "Waiting for ALB webhook... attempt $i/60"
+        sleep 10
+      done
+
+      echo "ERROR: ALB webhook did not become ready."
+      exit 1
+    EOT
+  }
+}
 
  module "k8s" {
    source = "./modules/k8s"
@@ -132,29 +157,3 @@ resource "helm_release" "argocd" {
   ]
 }
 
-resource "null_resource" "wait_for_alb_controller" {
-  depends_on = [module.alb_controller]
-
-  provisioner "local-exec" {
-    command = <<-EOT
-      echo "Waiting for AWS Load Balancer Controller webhook..."
-
-      for i in $(seq 1 60); do
-        ENDPOINTS=$(kubectl get endpoints aws-load-balancer-webhook-service \
-          -n kube-system \
-          -o jsonpath='{.subsets[*].addresses[*].ip}' 2>/dev/null || true)
-
-        if [ -n "$ENDPOINTS" ]; then
-          echo "ALB webhook is ready: $ENDPOINTS"
-          exit 0
-        fi
-
-        echo "Waiting for ALB webhook... attempt $i/60"
-        sleep 10
-      done
-
-      echo "ERROR: ALB webhook did not become ready."
-      exit 1
-    EOT
-  }
-}
