@@ -46,8 +46,10 @@ resource "helm_release" "alb_controller" {
   repository = "https://aws.github.io/eks-charts"
   chart      = "aws-load-balancer-controller"
   version    = "1.14.0"
+
   wait    = true
   timeout = 600
+
   set = [
     {
       name  = "clusterName"
