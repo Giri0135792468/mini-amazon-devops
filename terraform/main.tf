@@ -121,14 +121,40 @@ resource "kubernetes_namespace" "argocd" {
 resource "helm_release" "argocd" {
   name       = "argocd"
   namespace  = kubernetes_namespace.argocd.metadata[0].name
-
   repository = "https://argoproj.github.io/argo-helm"
   chart      = "argo-cd"
 
   create_namespace = false
 
   depends_on = [
-    kubernetes_namespace.argocd
+    kubernetes_namespace.argocd,
+    null_resource.wait_for_alb_controller
   ]
 }
 
+resource "null_resource" "wait_for_alb_controller" {
+  depends_on = [module.alb_controller]
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      echo "Waiting for AWS Load Balancer Controller webhook..."
+
+      for i in $(seq 1 60); do
+        ENDPOINTS=$(kubectl get endpoints aws-load-balancer-webhook-service \
+          -n kube-system \
+          -o jsonpath='{.subsets[*].addresses[*].ip}' 2>/dev/null || true)
+
+        if [ -n "$ENDPOINTS" ]; then
+          echo "ALB webhook is ready: $ENDPOINTS"
+          exit 0
+        fi
+
+        echo "Waiting for ALB webhook... attempt $i/60"
+        sleep 10
+      done
+
+      echo "ERROR: ALB webhook did not become ready."
+      exit 1
+    EOT
+  }
+}
