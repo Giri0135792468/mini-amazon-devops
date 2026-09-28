@@ -113,10 +113,9 @@ resource "kubernetes_namespace" "argocd" {
     name = "argocd"
   }
 
-depends_on = [
-  kubernetes_namespace.argocd,
-  module.alb_controller
-]
+  depends_on = [
+    module.alb_controller
+  ]
 }
 
 resource "helm_release" "argocd" {
@@ -129,6 +128,6 @@ resource "helm_release" "argocd" {
 
   depends_on = [
     kubernetes_namespace.argocd,
-    null_resource.wait_for_alb_controller
+    module.alb_controller
   ]
-}
+}}
