@@ -386,45 +386,82 @@ PY
             }
         }
 
-        // ============================================================
-        // TERRAFORM AWS BOOTSTRAP
-        // ============================================================
+// ============================================================
+// TERRAFORM AWS BOOTSTRAP
+// ============================================================
 
-        stage('Terraform AWS Bootstrap') {
-            when {
-                expression {
-                    !params.DESTROY_INFRA
-                }
-            }
+stage('Terraform AWS Bootstrap') {
+    when {
+        expression {
+            !params.DESTROY_INFRA
+        }
+    }
 
-            steps {
-                withCredentials([
-                    string(
-                        credentialsId: 'db-password',
-                        variable: 'TF_VAR_db_password'
-                    ),
-                    string(
-                        credentialsId: 'jwt-secret',
-                        variable: 'TF_VAR_jwt_secret'
-                    ),
-                    string(
-                        credentialsId: 'flask-secret-key',
-                        variable: 'TF_VAR_flask_secret_key'
-                    )
-                ]) {
-                    dir('terraform') {
-                        sh '''
-                            terraform apply \
-                                -target=module.vpc \
-                                -target=module.eks \
-                                -target=module.iam \
-                                -auto-approve
-                        '''
-                    }
-                }
+    steps {
+        withCredentials([
+            string(
+                credentialsId: 'db-password',
+                variable: 'TF_VAR_db_password'
+            ),
+            string(
+                credentialsId: 'jwt-secret',
+                variable: 'TF_VAR_jwt_secret'
+            ),
+            string(
+                credentialsId: 'flask-secret-key',
+                variable: 'TF_VAR_flask_secret_key'
+            )
+        ]) {
+            dir('terraform') {
+                sh '''
+                    set -e
+
+                    echo "========================================"
+                    echo "Terraform AWS Bootstrap"
+                    echo "========================================"
+
+                    terraform apply \
+                        -target=module.vpc \
+                        -target=module.eks \
+                        -target=module.iam \
+                        -auto-approve
+
+                    echo "========================================"
+                    echo "Checking Argo CD Helm release"
+                    echo "========================================"
+
+                    if helm status argocd -n argocd >/dev/null 2>&1; then
+
+                        echo "Argo CD Helm release already exists."
+
+                        if terraform state show helm_release.argocd >/dev/null 2>&1; then
+
+                            echo "Argo CD is already managed by Terraform."
+
+                        else
+
+                            echo "Argo CD exists but is missing from Terraform state."
+                            echo "Importing existing Argo CD release..."
+
+                            terraform import \
+                                helm_release.argocd \
+                                argocd/argocd
+
+                            echo "Argo CD successfully imported into Terraform state."
+
+                        fi
+
+                    else
+
+                        echo "Argo CD Helm release does not exist."
+                        echo "Terraform will create it during the normal Terraform Apply."
+
+                    fi
+                '''
             }
         }
-
+    }
+}
         // ============================================================
         // TERRAFORM PLAN
         // ============================================================
