@@ -75,91 +75,6 @@ module "alb_controller" {
   ]
 }
 
-# ============================================================
-# DEBUG AWS LOAD BALANCER CONTROLLER
-# ============================================================
-
-resource "null_resource" "debug_alb_controller" {
-  depends_on = [
-    module.alb_controller
-  ]
-
-  provisioner "local-exec" {
-    command = <<-EOT
-      echo "========================================"
-      echo "ALB CONTROLLER PODS"
-      echo "========================================"
-
-      kubectl get pods \
-        -n kube-system \
-        -l app.kubernetes.io/name=aws-load-balancer-controller \
-        -o wide
-
-      echo "========================================"
-      echo "ALB CONTROLLER SERVICE"
-      echo "========================================"
-
-      kubectl get svc \
-        aws-load-balancer-webhook-service \
-        -n kube-system
-
-      echo "========================================"
-      echo "ALB WEBHOOK ENDPOINTS"
-      echo "========================================"
-
-      kubectl get endpoints \
-        aws-load-balancer-webhook-service \
-        -n kube-system \
-        -o wide
-
-      echo "========================================"
-      echo "ALB CONTROLLER EVENTS"
-      echo "========================================"
-
-      kubectl get events \
-        -n kube-system \
-        --sort-by=.lastTimestamp | \
-        grep -i load-balancer || true
-    EOT
-  }
-}
-
-# ============================================================
-# WAIT FOR AWS LOAD BALANCER CONTROLLER WEBHOOK
-# ============================================================
-
-resource "null_resource" "wait_for_alb_controller" {
-  depends_on = [
-    null_resource.debug_alb_controller
-  ]
-
-  provisioner "local-exec" {
-    command = <<-EOT
-      echo "Waiting for AWS Load Balancer Controller webhook..."
-
-      for i in $(seq 1 60); do
-
-        ENDPOINTS=$(kubectl get endpoints \
-          aws-load-balancer-webhook-service \
-          -n kube-system \
-          -o jsonpath='{.subsets[*].addresses[*].ip}' \
-          2>/dev/null || true)
-
-        if [ -n "$ENDPOINTS" ]; then
-          echo "ALB webhook is ready: $ENDPOINTS"
-          exit 0
-        fi
-
-        echo "Waiting for ALB webhook... attempt $i/60"
-
-        sleep 10
-      done
-
-      echo "ERROR: ALB webhook did not become ready."
-      exit 1
-    EOT
-  }
-}
 
 # ============================================================
 # KUBERNETES RESOURCES
@@ -198,9 +113,10 @@ resource "kubernetes_namespace" "argocd" {
     name = "argocd"
   }
 
-  depends_on = [
-    module.eks
-  ]
+depends_on = [
+  kubernetes_namespace.argocd,
+  module.alb_controller
+]
 }
 
 resource "helm_release" "argocd" {
