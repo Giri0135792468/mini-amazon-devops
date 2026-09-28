@@ -333,7 +333,7 @@ for line in lines:
     if current_service and stripped.startswith("tag:"):
         indent = line[:len(line) - len(line.lstrip())]
 
-        line = f'{indent}tag: "{deploy_tag}"\n'
+        line = '{}tag: "{}"\n'.format(indent, deploy_tag)
 
         current_service = None
 
