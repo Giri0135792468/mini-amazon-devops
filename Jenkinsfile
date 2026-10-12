@@ -494,7 +494,13 @@ stage('Terraform AWS Bootstrap') {
                 }
             }
         }
+sh '''
+    echo "Checking AWS identity from Jenkins pipeline..."
+    aws sts get-caller-identity
 
+    echo "Checking Terraform AWS provider..."
+    terraform providers
+'''
         // ============================================================
         // TERRAFORM APPLY
         // ============================================================
