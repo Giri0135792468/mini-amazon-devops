@@ -8,7 +8,7 @@ node_min_size      = 2
 node_max_size      = 3
 
 dynamodb_table_name = "mini-amazon-products"
-s3_bucket_name      = "mini-amazon-product-images"
+s3_bucket_name = "mini-amazon-product-images-189761005134-ap2"
 
 db_name     = "mini_amazon"
 db_username = "admin"
