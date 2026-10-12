@@ -174,6 +174,7 @@ pipeline {
                     !params.DESTROY_INFRA
                 }
             }
+
             steps {
                 script {
                     withCredentials([
@@ -190,10 +191,10 @@ pipeline {
 
                             if [ -n "${ROLLBACK_BUILD}" ]; then
                                 DEPLOY_TAG="${ROLLBACK_BUILD}"
-                                echo "Preparing rollback to build ${DEPLOY_TAG}"
+                                echo "Rolling back to build ${DEPLOY_TAG}"
                             else
                                 DEPLOY_TAG="${IMAGE_TAG}"
-                                echo "Preparing deployment of build ${DEPLOY_TAG}"
+                                echo "Deploying build ${DEPLOY_TAG}"
                             fi
 
                             python3 - "$VALUES_FILE" "$DEPLOY_TAG" <<'PY'
@@ -217,26 +218,44 @@ with open(values_file, "r", encoding="utf-8") as f:
 
 current_service = None
 updated = []
+updated_services = set()
 
 for line in lines:
     stripped = line.strip()
 
     if stripped.endswith(":") and not stripped.startswith("tag:"):
         service_name = stripped[:-1]
+
         if service_name in services:
             current_service = service_name
 
     if current_service and stripped.startswith("tag:"):
         indent = line[:len(line) - len(line.lstrip())]
-        line = indent + 'tag: "' + deploy_tag + '"\n'
+
+        # chr(10) safely adds a newline inside the Jenkins heredoc.
+        line = indent + 'tag: "' + deploy_tag + '"' + chr(10)
+
+        updated_services.add(current_service)
         current_service = None
 
     updated.append(line)
 
+missing = services - updated_services
+
+if missing:
+    sys.exit(
+        "ERROR: Could not update tag fields for: "
+        + ", ".join(sorted(missing))
+    )
+
 with open(values_file, "w", encoding="utf-8") as f:
     f.writelines(updated)
+
+print("Updated image tags to:", deploy_tag)
+print("Updated services:", ", ".join(sorted(updated_services)))
 PY
 
+                            echo "Updated Helm values:"
                             git diff -- "$VALUES_FILE"
 
                             git config user.name "Jenkins"
@@ -252,27 +271,23 @@ PY
                             git commit \
                                 -m "chore: update image tags to ${DEPLOY_TAG} [skip ci]"
 
-                            git pull --rebase origin main
-
+                            # Push securely using Jenkins credentials.
                             ORIGIN_URL=$(git remote get-url origin)
 
-                            if echo "$ORIGIN_URL" | grep -q '^git@github.com:'; then
-                                REPO_PATH=$(echo "$ORIGIN_URL" |
-                                    sed 's#^git@github.com:##')
-                            else
-                                REPO_PATH=$(echo "$ORIGIN_URL" |
-                                    sed -E 's#https?://[^/]+/##; s#\\.git$##')
-                            fi
+                            REPO_PATH=$(echo "$ORIGIN_URL" |
+                                sed -E 's#^https?://[^/]+/##; s#\\.git$##')
 
                             git push \
                                 "https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/${REPO_PATH}.git" \
                                 HEAD:main
+
+                            echo "GitOps values updated successfully."
+                            echo "Deployment tag: ${DEPLOY_TAG}"
                         '''
                     }
                 }
             }
         }
-
         stage('Terraform AWS Bootstrap') {
             when {
                 expression {
