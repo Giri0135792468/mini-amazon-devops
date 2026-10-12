@@ -779,7 +779,7 @@ EOF
 
                         # Empty all object versions and delete markers from
                         # the project image bucket before Terraform destroy.
-                        BUCKET="mini-amazon-product-images"
+                        BUCKET="mini-amazon-product-images-189761005134-ap2"
 
                         if aws s3api head-bucket \
                             --bucket "$BUCKET" \
