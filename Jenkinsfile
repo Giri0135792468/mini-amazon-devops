@@ -228,8 +228,8 @@ pipeline {
                 ]) {
                     sh '''
                         set -eu
-
-                        VALUES_FILE="helm/mini-amazon/values.yaml"
+ROLLBACK_BUILD="${ROLLBACK_BUILD:-}"
+VALUES_FILE=helm/mini-amazon/values.yaml
 
                         if [ -n "${ROLLBACK_BUILD}" ]; then
                             DEPLOY_TAG="${ROLLBACK_BUILD}"
