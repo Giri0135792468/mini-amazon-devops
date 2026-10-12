@@ -3,28 +3,28 @@ namespace: mini
 images:
   user:
     repository: girijos/mini-amazon-user-service
-    tag: "6"
+    tag: "7"
 
   product:
     repository: girijos/mini-amazon-product-service
-    tag: "6"
+    tag: "7"
 
   cart:
     repository: girijos/mini-amazon-cart-service
-    tag: "6"
+    tag: "7"
 
   order:
     repository: girijos/mini-amazon-order-service
-    tag: "6"
+    tag: "7"
 
   payment:
     repository: girijos/mini-amazon-payment-service
-    tag: "6"
+    tag: "7"
 
   notification:
     repository: girijos/mini-amazon-notification-service
-    tag: "6"
+    tag: "7"
 
   frontend:
     repository: girijos/mini-amazon-frontend
-    tag: "6"
+    tag: "7"
