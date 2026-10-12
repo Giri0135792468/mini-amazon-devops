@@ -91,7 +91,7 @@ variable "dynamodb_table_name" {
 variable "s3_bucket_name" {
   description = "Name of the S3 bucket for Mini Amazon product images"
   type        = string
-  default     = "mini-amazon-product-imagess"
+  default     = "mini-amazon-product-images-189761005134"
 }
 
 
