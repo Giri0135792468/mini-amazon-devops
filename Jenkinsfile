@@ -602,55 +602,92 @@ EOF
         // VERIFY ARGO CD DEPLOYMENT
         // ============================================================
 
-        stage('Verify Deployment') {
-            when {
-                expression {
-                    !params.DESTROY_INFRA
-                }
-            }
-            steps {
-                sh '''
-                    set -eu
 
-                    echo "Waiting for Argo CD Application."
-
-                    for i in $(seq 1 30); do
-                        if kubectl get application mini-amazon \
-                            -n argocd >/dev/null 2>&1; then
-                            break
-                        fi
-
-                        echo "Waiting for Argo CD Application..."
-                        sleep 10
-                    done
-
-                    kubectl get application mini-amazon -n argocd
-
-                    echo "Waiting for deployments in namespace mini."
-
-                    kubectl wait \
-                        --for=condition=Available \
-                        deployment \
-                        --all \
-                        -n mini \
-                        --timeout=10m
-
-                    echo "Pods:"
-                    kubectl get pods -n mini
-
-                    echo "Services:"
-                    kubectl get services -n mini
-
-                    echo "Ingress:"
-                    kubectl get ingress -n mini
-
-                    echo "Helm releases:"
-                    helm list -n mini
-
-                    echo "Deployment verification completed."
-                '''
-            }
+stage('Verify Deployment') {
+    when {
+        expression {
+            !params.DESTROY_INFRA
         }
+    }
+    steps {
+        sh '''
+            set -eu
+
+            echo "Waiting for Argo CD Application to sync."
+
+            SYNC=""
+            for i in $(seq 1 60); do
+                SYNC=$(kubectl get application mini-amazon \
+                    -n argocd \
+                    -o jsonpath='{.status.sync.status}' \
+                    2>/dev/null || true)
+
+                HEALTH=$(kubectl get application mini-amazon \
+                    -n argocd \
+                    -o jsonpath='{.status.health.status}' \
+                    2>/dev/null || true)
+
+                echo "Attempt $i: Sync=$SYNC, Health=$HEALTH"
+
+                if [ "$SYNC" = "Synced" ]; then
+                    break
+                fi
+
+                sleep 10
+            done
+
+            if [ "$SYNC" != "Synced" ]; then
+                echo "ERROR: Argo CD did not reach Synced status."
+                kubectl describe application mini-amazon -n argocd
+                exit 1
+            fi
+
+            echo "Waiting for deployments in namespace mini."
+
+            COUNT=0
+            for i in $(seq 1 60); do
+                COUNT=$(kubectl get deployments -n mini \
+                    -o name 2>/dev/null | wc -l)
+
+                if [ "$COUNT" -gt 0 ]; then
+                    break
+                fi
+
+                echo "No Deployments found yet. Attempt $i."
+                sleep 10
+            done
+
+            if [ "$COUNT" -eq 0 ]; then
+                echo "ERROR: No Deployments found in namespace mini."
+                kubectl get all -n mini
+                exit 1
+            fi
+
+            echo "Waiting for all Deployments to become available."
+
+            kubectl wait \
+                --for=condition=Available \
+                deployment \
+                --all \
+                -n mini \
+                --timeout=10m
+
+            echo "Pods:"
+            kubectl get pods -n mini
+
+            echo "Services:"
+            kubectl get services -n mini
+
+            echo "Ingress:"
+            kubectl get ingress -n mini
+
+            echo "Helm releases:"
+            helm list -n mini
+
+            echo "Deployment verification completed."
+        '''
+    }
+}
 
         // ============================================================
         // DESTROY INFRASTRUCTURE
@@ -856,3 +893,6 @@ print(len(json.load(sys.stdin).get("Objects", [])))
         }
     }
 }
+
+
+
